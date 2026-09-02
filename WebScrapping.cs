@@ -1,8 +1,11 @@
 ﻿using System.Globalization;
+using System.Net;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using NPOI.XWPF.UserModel;
+using Polly;
+using Polly.Retry;
 
 namespace SabbathSchoolLessonBuilder
 {
@@ -12,6 +15,25 @@ namespace SabbathSchoolLessonBuilder
         private const string Quarter = "02";
         private const string BaseUrl = $"https://sabbath-school-stage.adventech.io/api/v2/uk/quarterlies/{Year}-{Quarter}";
         private const string BibleUrl = "https://www.bible.com/uk/bible/3786/";
+
+        // Delay between sequential requests to adventech.io, so we're a well-behaved API citizen.
+        private static readonly TimeSpan RequestThrottleDelay = TimeSpan.FromMilliseconds(300);
+
+        private static readonly ResiliencePipeline<HttpResponseMessage> RetryPipeline = new ResiliencePipelineBuilder<HttpResponseMessage>()
+            .AddRetry(new RetryStrategyOptions<HttpResponseMessage>
+            {
+                ShouldHandle = new PredicateBuilder<HttpResponseMessage>()
+                    .Handle<HttpRequestException>()
+                    .Handle<TaskCanceledException>()
+                    .HandleResult(response => response.StatusCode == HttpStatusCode.RequestTimeout
+                        || response.StatusCode == HttpStatusCode.TooManyRequests
+                        || (int)response.StatusCode >= 500),
+                MaxRetryAttempts = 3,
+                BackoffType = DelayBackoffType.Exponential,
+                Delay = TimeSpan.FromSeconds(1),
+                UseJitter = true
+            })
+            .Build();
 
         private static readonly IReadOnlyList<(string Key, string Value)> BooksOfBible = new List<(string Key, string Value)>
         {
@@ -102,6 +124,20 @@ namespace SabbathSchoolLessonBuilder
             logger.Information("Sabbath School lessons were created!");
         }
 
+        // Fetches a URL with retry/backoff for transient failures, then throttles before
+        // returning so the next sequential request doesn't immediately follow it.
+        private static async Task<HttpResponseMessage> GetWithRetryAsync(HttpClient client, string url)
+        {
+            var response = await RetryPipeline.ExecuteAsync(
+                static async (state, ct) => await state.Client.GetAsync(state.Url, ct),
+                (Client: client, Url: url),
+                CancellationToken.None);
+
+            await Task.Delay(RequestThrottleDelay);
+
+            return response;
+        }
+
         private static async Task<IList<Ss>> GetHeaders(Serilog.ILogger logger)
         {
             var res = new List<Ss>();
@@ -109,7 +145,7 @@ namespace SabbathSchoolLessonBuilder
 
             logger.Information("Getting all lessons");
 
-            var response = await client.GetAsync($"{BaseUrl}/index.json");
+            var response = await GetWithRetryAsync(client, $"{BaseUrl}/index.json");
             if (!response.IsSuccessStatusCode)
             {
                 logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/index.json", response.StatusCode);
@@ -127,7 +163,7 @@ namespace SabbathSchoolLessonBuilder
 
                 logger.Information("Getting lesson {LessonInd}", lessonInd);
 
-                response = await client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/index.json");
+                response = await GetWithRetryAsync(client, $"{BaseUrl}/lessons/{lessonInd}/index.json");
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/index.json", response.StatusCode);
@@ -147,7 +183,7 @@ namespace SabbathSchoolLessonBuilder
 
                     logger.Debug("->Getting day {DayCounter}", dayCounter + 1);
 
-                    response = await client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
+                    response = await GetWithRetryAsync(client, $"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
                     if (!response.IsSuccessStatusCode)
                     {
                         logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/days/0{dayCounter}/read/index.json", response.StatusCode);

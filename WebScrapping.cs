@@ -4,7 +4,7 @@ using HtmlAgilityPack;
 using Newtonsoft.Json;
 using NPOI.XWPF.UserModel;
 
-namespace WebScrapping._SS
+namespace SabbathSchoolLessonBuilder
 {
     public class WebScrapping
     {

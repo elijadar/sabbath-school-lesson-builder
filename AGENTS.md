@@ -30,9 +30,11 @@ There are no automated tests and no CI configuration.
 
 ## Project layout
 
-- `WebScrapping. SS.csproj` — single project, `net10.0`, nullable + implicit usings
-  enabled. Note the literal space in the project/folder name (`WebScrapping. SS`) —
-  always quote paths.
+- `SabbathSchoolLessonBuilder.csproj` — single project, `net10.0`, nullable +
+  implicit usings enabled.
+- The local checkout folder is still named `WebScrapping. SS` (contains a literal
+  space) even though the project/repo were renamed — always quote paths that
+  include it. Rename it to `sabbath-school-lesson-builder` when convenient.
 - `WebScrapping.cs` — main scraping + document-generation logic (single static class).
 - `Program.cs` — sets up Serilog console logging and calls `WebScrapping.Run`.
 - `Extensions.cs`, `Ss.cs` — helpers / models.
@@ -46,8 +48,8 @@ There are no automated tests and no CI configuration.
 ## Build / run
 
 ```powershell
-dotnet build "WebScrapping. SS.csproj"
-dotnet run --project "WebScrapping. SS.csproj"
+dotnet build SabbathSchoolLessonBuilder.csproj
+dotnet run --project SabbathSchoolLessonBuilder.csproj
 ```
 
 Running performs live HTTP calls (adventech.io only) and writes `.docx` files into

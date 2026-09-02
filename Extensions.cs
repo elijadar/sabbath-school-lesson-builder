@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 using Humanizer;
 
-namespace WebScrapping._SS
+namespace SabbathSchoolLessonBuilder
 {
     public static class Extensions
     {

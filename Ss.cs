@@ -1,6 +1,6 @@
 ﻿using HtmlAgilityPack;
 
-namespace WebScrapping._SS
+namespace SabbathSchoolLessonBuilder
 {
     public class Ss
     {

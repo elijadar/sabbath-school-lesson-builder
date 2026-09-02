@@ -1,6 +1,6 @@
 ﻿using Serilog;
 
-namespace WebScrapping._SS
+namespace SabbathSchoolLessonBuilder
 {
     public class Program
     {

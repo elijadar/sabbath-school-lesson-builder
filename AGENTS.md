@@ -55,6 +55,22 @@ network side effects and producing output files that should not be committed
 (the `.gitignore` excludes generated `Суботня школа *.docx` files, but not the
 tracked `Template.docx`).
 
+## Implementing a GitHub issue
+
+When asked to implement a feature or bug fix tracked as a GitHub issue:
+
+1. **Read the issue** with `gh issue view <n>` (or the issue URL) to get the
+   title, body, and any comments/labels — don't rely on a paraphrase, read the
+   actual issue text before writing code.
+2. **Branch off latest `main`** per the naming convention below, scoped to
+   just that issue.
+3. **Implement the change**, following the conventions/gotchas in this file.
+4. **Verify**: `dotnet build SabbathSchoolLessonBuilder.csproj` must succeed;
+   do a smoke run too when practical (see Build/run above).
+5. **Open a PR** with `gh pr create`, referencing the issue (e.g. `Closes #8`
+   in the body) so it auto-closes on merge. Do not merge it yourself unless
+   explicitly told to.
+
 ## Git workflow
 
 - **One branch per unit of work.** Before starting a feature or bug fix,

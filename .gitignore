@@ -1,0 +1,10 @@
+# Build artifacts
+bin/
+obj/
+.vs/
+
+# Generated lesson documents (scraped content, not source)
+Суботня школа *.docx
+
+# User-specific files
+*.user

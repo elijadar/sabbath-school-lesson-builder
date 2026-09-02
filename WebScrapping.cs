@@ -92,13 +92,13 @@ namespace SabbathSchoolLessonBuilder
             "П'ятниця. "
         };
 
-        public static void Run(Serilog.ILogger logger)
+        public static async Task Run(Serilog.ILogger logger)
         {
             logger.Information("Creation of Sabbath School lessons!");
 
-            var sss = GetHeaders(logger).Result;
-            CreateDocs(sss, logger).Wait();
-            
+            var sss = await GetHeaders(logger);
+            await CreateDocs(sss, logger);
+
             logger.Information("Sabbath School lessons were created!");
         }
 

@@ -125,9 +125,9 @@ WebScrapping.cs:391-398).
    with two hardcoded book-name corrections (`"Филм"` → `"Филимона"`,
    `"Мих"` → `"Міхея"`). Fragile if more books need similar special-casing;
    a lookup table would scale better and be independently testable.
-5. ⏳ **Blocking `.Wait()`/`.Result` in `Run()`** instead of an async `Main`.
-   Low risk in this single-threaded console app, but a latent deadlock trap
-   if this code is ever reused somewhere with a sync context. Tracked as
+5. ✅ **Blocking `.Wait()`/`.Result` in `Run()`** instead of an async `Main`.
+   Fixed: `Main` is now `static async Task Main`, `WebScrapping.Run` returns
+   `Task`, and both calls use `await`. See
    [issue #8](https://github.com/elijadar/sabbath-school-lesson-builder/issues/8).
 6. ⏳ **No retry/backoff for transient HTTP failures** (e.g. via Polly) and
    **no delay/throttling between the many sequential requests** to

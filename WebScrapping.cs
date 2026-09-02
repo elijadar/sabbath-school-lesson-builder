@@ -276,32 +276,17 @@ namespace SabbathSchoolLessonBuilder
                 // Delete contents
                 while (doc.RemoveBodyElement(0)) { }
 
+                AddParagraph(doc, "Title", $"{ss.LessonTitle}");
+
+                AddParagraph(doc, "Subtitle", $"{i + 1}. {ss.Title}");
+
+                AddParagraph(doc, "Heading2", "Вступ");
+
+                AddParagraph(doc, "Normal", "Привітання");
+
+                AddParagraph(doc, "Heading3", "Пам’ятний вірш");
+
                 XWPFParagraph para1 = doc.CreateParagraph();
-                para1.Style = "Title";
-                XWPFRun run1 = para1.CreateRun();
-                run1.SetText($"{ss.LessonTitle}");
-
-                para1 = doc.CreateParagraph();
-                para1.Style = "Subtitle";
-                run1 = para1.CreateRun();
-                run1.SetText($"{i + 1}. {ss.Title}");
-
-                para1 = doc.CreateParagraph();
-                para1.Style = "Heading2";
-                run1 = para1.CreateRun();
-                run1.SetText("Вступ");
-
-                para1 = doc.CreateParagraph();
-                para1.Style = "Normal";
-                run1 = para1.CreateRun();
-                run1.SetText("Привітання");
-
-                para1 = doc.CreateParagraph();
-                para1.Style = "Heading3";
-                run1 = para1.CreateRun();
-                run1.SetText("Пам’ятний вірш");
-
-                para1 = doc.CreateParagraph();
                 para1.Style = "IntenseQuote";
 
                 var hyperlinkRun = CreateHyperlinkRun(para1, GetBibleLink(ss.MemoryVerse));
@@ -309,47 +294,26 @@ namespace SabbathSchoolLessonBuilder
                 hyperlinkRun.SetColor("0563C1");
                 hyperlinkRun.Underline = UnderlinePatterns.Single;
 
-                run1 = para1.CreateRun();
+                XWPFRun run1 = para1.CreateRun();
                 run1.AddBreak(BreakType.TEXTWRAPPING);
                 run1.AppendText(ss.MemoryVerse.Item2);
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Heading3";
-                run1 = para1.CreateRun();
-                run1.SetText("Питання уроку:");
+                AddParagraph(doc, "Heading3", "Питання уроку:");
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Normal";
-                run1 = para1.CreateRun();
-                run1.SetText("Ділимося на 3 класи. До 11:10.");
+                AddParagraph(doc, "Normal", "Ділимося на 3 класи. До 11:10.");
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Heading2";
-                run1 = para1.CreateRun();
-                run1.SetText("Початок уроку");
+                AddParagraph(doc, "Heading2", "Початок уроку");
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Normal";
-                run1 = para1.CreateRun();
-                run1.SetText("\u2192 ");
+                AddParagraph(doc, "Normal", "\u2192 ");
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Heading2";
-                run1 = para1.CreateRun();
-                run1.SetText("Пам’ятний вірш");
+                AddParagraph(doc, "Heading2", "Пам’ятний вірш");
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Normal";
-                run1 = para1.CreateRun();
-                run1.SetText("\u2192 ");
+                AddParagraph(doc, "Normal", "\u2192 ");
 
                 for (var j = 0; j < Math.Min(DaysOfWeek.Count, ss.Days.Count - 1); j++)
                 {
                     var day = ss.Days[j + 1];
-                    para1 = doc.CreateParagraph();
-                    para1.Style = "Heading2";
-                    run1 = para1.CreateRun();
-                    run1.SetText(DaysOfWeek[j] + day.Title);
+                    AddParagraph(doc, "Heading2", DaysOfWeek[j] + day.Title);
 
                     foreach (var question in day.Questions)
                     {
@@ -387,20 +351,11 @@ namespace SabbathSchoolLessonBuilder
                     }
                 }
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Heading2";
-                run1 = para1.CreateRun();
-                run1.SetText("Закінчення");
+                AddParagraph(doc, "Heading2", "Закінчення");
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Normal";
-                run1 = para1.CreateRun();
-                run1.SetText(" ");
+                AddParagraph(doc, "Normal", " ");
 
-                para1 = doc.CreateParagraph();
-                para1.Style = "Heading3";
-                run1 = para1.CreateRun();
-                run1.SetText("Молитва");
+                AddParagraph(doc, "Heading3", "Молитва");
 
                 logger.Debug("Saving document {Title}", ss.Title);
 
@@ -411,6 +366,15 @@ namespace SabbathSchoolLessonBuilder
             }
 
             logger.Information("All documents were saved");
+        }
+
+        private static XWPFRun AddParagraph(XWPFDocument doc, string style, string text)
+        {
+            var paragraph = doc.CreateParagraph();
+            paragraph.Style = style;
+            var run = paragraph.CreateRun();
+            run.SetText(text);
+            return run;
         }
 
         private static string GetBibleLink((string, string) where)

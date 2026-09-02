@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using NPOI.XWPF.UserModel;
@@ -179,28 +178,17 @@ namespace SabbathSchoolLessonBuilder
                             var qNodes = questionNode.SelectNodes(".//a[@class='verse']");
                             if (qNodes?.Any() ?? false)
                             {
-                                var tmpVerses = qNodes.Select(x => x.InnerText.Replace("–", "-")).ToList();
+                                var tmpVerses = qNodes.Select(x => x.InnerText).ToList();
                                 foreach (var tmpVerse in tmpVerses)
                                 {
-                                    var pattern = @"([\dІ\.]{0,2}\s*[а-яА-ЯІїєюіЇЄЮ’]+\.{0,1}\s+\d+\:[\d,\-\s]+)(?:(?![\dІ\.]{0,2}\s*[а-яА-ЯІїєюіЇЄЮ’]+\.{0,1}\s+\d+\:[\d,\-\s]+).)*";
-                                    var matches = Regex.Matches(tmpVerse, pattern);
-                                    foreach (Match m in matches)
+                                    foreach (var extracted in TextCleanup.ExtractVerseReferences(tmpVerse))
                                     {
-                                        var tmpValue = Regex.Replace(m.Value.Trim(), @"^\s*[\.\:\;] ", "");
-                                        tmpValue = Regex.Replace(tmpValue, @"\s*[\,\;\.]$", "");
-                                        verses.Add(tmpValue);
+                                        verses.Add(extracted);
                                     }
                                 }
                             }
 
-                            var question = questionNode.InnerText.Trim();
-                            question = Regex.Replace(question, @"^\d+\. ", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s+тексти\s*", "");
-                            question = Regex.Replace(question, @"^Перегляньте\s+уривок\s*", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s+уривок\s*", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s*", "");
-                            question = Regex.Replace(question, @"^\s*див.\s*", "");
-                            question = Regex.Replace(question, @"^\s*текст\s*", "");
+                            var question = TextCleanup.TrimQuestionText(questionNode.InnerText);
                             questions.Add(new Question(verses, question));
                         }
                     }
@@ -224,40 +212,12 @@ namespace SabbathSchoolLessonBuilder
                     Title = entry["title"],
                     EndDate = DateTime.ParseExact(entry["end_date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
                     Url = entry["full_path"],
-                    MemoryVerse = GetVerse(verse),
+                    MemoryVerse = TextCleanup.ParseMemoryVerse(verse),
                     Days = days
                 });
             }
 
             return res;
-        }
-
-        private static (string, string) GetVerse(string verse)
-        {
-            var res = string.Empty;
-            if (string.IsNullOrWhiteSpace(verse) || verse.IndexOf('(') < 0)
-            {
-                return (res, res);
-            }
-
-            var openIdx = verse.IndexOf('(');
-            var closeIdx = verse.IndexOf(')');
-            if (closeIdx < 0 || closeIdx < openIdx)
-            {
-                return (res, res);
-            }
-
-            var bbl = verse.Substring(openIdx + 1, closeIdx - openIdx - 1);
-
-            var trimmed = verse.TrimStart('«');
-            var closingGuillemetIdx = trimmed.IndexOf('»');
-            if (closingGuillemetIdx < 1)
-            {
-                return (res, res);
-            }
-
-            res = trimmed.Substring(0, closingGuillemetIdx - 1);
-            return (bbl, res);
         }
 
         private static async Task CreateDocs(IList<Ss> sss, Serilog.ILogger logger)
@@ -336,10 +296,7 @@ namespace SabbathSchoolLessonBuilder
                                 hyperlinkRun.SetColor("0563C1");
                                 hyperlinkRun.Underline = UnderlinePatterns.Single;
                                 innerText = innerText.Replace(verse, "");
-                                innerText = Regex.Replace(innerText, @"\s*\((?:Прочитайте|див\.|Див\.\s+також)?\s*\)\.*", "");
-                                innerText = Regex.Replace(innerText, @"^\s*[\.\:\;] ", "");
-                                innerText = Regex.Replace(innerText, @"^\s*та ", "");
-                                innerText = Regex.Replace(innerText, @"^\s*і ", "");
+                                innerText = TextCleanup.CleanupAfterVerseRemoval(innerText);
                             }
                             run1 = para1.CreateRun();
                             run1.SetText($" {innerText}");
@@ -388,14 +345,7 @@ namespace SabbathSchoolLessonBuilder
             var refer = string.Empty;
             var verse = where.Item1.Split(' ');
             var bookName = verse[0].Trim('.').Length == 1 ? verse[1].Trim('.') : verse[0].Trim('.');
-            if (bookName.StartsWith("Филм", StringComparison.InvariantCultureIgnoreCase))
-            {
-                bookName = "Филимона";
-            }
-            if (bookName.StartsWith("Мих", StringComparison.InvariantCultureIgnoreCase))
-            {
-                bookName = "Міхея";
-            }
+            bookName = TextCleanup.NormalizeBookNameOverride(bookName);
             foreach (var book in BooksOfBible)
             {
                 if (book.Key.Contains(bookName, StringComparison.InvariantCultureIgnoreCase))

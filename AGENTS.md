@@ -55,6 +55,49 @@ network side effects and producing output files that should not be committed
 (the `.gitignore` excludes generated `Суботня школа *.docx` files, but not the
 tracked `Template.docx`).
 
+## Git workflow
+
+- **One branch per unit of work.** Before starting a feature or bug fix,
+  create a branch off the latest `main`:
+  - Feature: `features/<very-short-name>` (e.g. `features/config-quarter`)
+  - Bug fix: `bugs/<very-short-description>` (e.g. `bugs/getverse-crash`)
+  Keep the branch scoped to one feature/bug — don't bundle unrelated changes
+  onto it.
+- **Open a PR once the work is implemented and verified**, not before. At
+  minimum, confirm `dotnet build SabbathSchoolLessonBuilder.csproj` succeeds
+  before opening the PR; if the change is runtime-visible and it's practical
+  to do so (network access available, etc.), do a smoke run too
+  (`dotnet run --project SabbathSchoolLessonBuilder.csproj`). Open the PR
+  against `main` via the GitHub CLI (`gh pr create --title ... --body ...`)
+  with a summary of the change and what was verified. Do not merge it
+  yourself unless explicitly told to — leave it for review, and note that
+  this repo does not allow plain merge commits (squash-merge only:
+  `gh pr merge <n> --squash --delete-branch`).
+- **After a PR merges, sync and clean up:**
+  1. `git fetch --prune origin` then fast-forward local `main`:
+     `git pull --ff-only origin main`.
+  2. Delete the now-merged local branch. Since PRs here are squash-merged,
+     git won't recognize the branch as "fully merged" by ancestry — use
+     `git branch -D <branch>` once you've confirmed it's actually merged on
+     GitHub (its remote ref will already be gone after `--delete-branch`).
+  3. If the work was done in a separate `git worktree`, remove it:
+     `git worktree remove <path> --force`, then `git worktree prune`. On
+     this machine the repo lives under a OneDrive-synced folder, so removal
+     can transiently fail with `Permission denied` (file lock from
+     OneDrive/AV/an open editor) — retry once or twice before treating it as
+     a real problem; leftover worktree directories are otherwise harmless
+     and can be deleted directly once unlocked.
+- `gh` (GitHub CLi) is installed on this machine but may not be on `PATH` in
+  a given shell. If `gh` isn't found: in git-bash run
+  `export PATH="$PATH:/c/Program Files/GitHub CLI"`; in PowerShell call it
+  via full path `& "C:\Program Files\GitHub CLI\gh.exe"`.
+- Independent features/bugs may be worked on in parallel (e.g. separate
+  worktrees branched off the same `main` commit), but expect PRs to
+  potentially conflict if they touch the same file — sequencing one after
+  another is safer when in doubt. When merges do conflict, prefer merging
+  `main` into the feature branch (not the reverse) to resolve it before
+  merging the PR.
+
 ## Conventions / gotchas for agents
 
 - The app is single-purpose and imperative; everything lives in a few static

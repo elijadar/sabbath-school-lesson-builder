@@ -123,10 +123,13 @@ WebScrapping.cs:391-398).
 3. ⏳ **`Year`/`Quarter` are hardcoded consts** at the top of `WebScrapping.cs`
    — the only way to scrape a different quarter is to edit source and
    rebuild. Could be read from `args`/config instead.
-4. ⏳ **`GetBibleLink` hand-parses Bible references** via string splitting,
+4. ✅ **`GetBibleLink` hand-parses Bible references** via string splitting,
    with two hardcoded book-name corrections (`"Филм"` → `"Филимона"`,
-   `"Мих"` → `"Міхея"`). Fragile if more books need similar special-casing;
-   a lookup table would scale better and be independently testable.
+   `"Мих"` → `"Міхея"`). Fixed: the corrections now live in a
+   `BookNameCorrections` lookup table, applied via a small pure
+   `NormalizeBookName` helper (longest-key-first, so future entries can't
+   collide with existing ones) instead of two inline `if` statements. See
+   [issue #15](https://github.com/elijadar/sabbath-school-lesson-builder/issues/15).
 5. ✅ **Blocking `.Wait()`/`.Result` in `Run()`** instead of an async `Main`.
    Fixed: `Main` is now `static async Task Main`, `WebScrapping.Run` returns
    `Task`, and both calls use `await`. See

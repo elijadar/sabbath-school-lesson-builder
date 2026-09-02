@@ -92,6 +92,17 @@ namespace SabbathSchoolLessonBuilder
             "П'ятниця. "
         };
 
+        // Abbreviated book names that don't line up with a substring match against
+        // BooksOfBible (e.g. Russian-spelled abbreviations vs. Ukrainian full names,
+        // or abbreviations that skip letters present in the full name) get corrected
+        // here before the lookup in GetBibleLink.
+        private static readonly IReadOnlyDictionary<string, string> BookNameCorrections =
+            new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+        {
+            ["Филм"] = "Филимона",
+            ["Мих"] = "Міхея"
+        };
+
         private static readonly HttpClient Client = new HttpClient();
 
         public static async Task Run(Serilog.ILogger logger)
@@ -389,14 +400,7 @@ namespace SabbathSchoolLessonBuilder
             var refer = string.Empty;
             var verse = where.Item1.Split(' ');
             var bookName = verse[0].Trim('.').Length == 1 ? verse[1].Trim('.') : verse[0].Trim('.');
-            if (bookName.StartsWith("Филм", StringComparison.InvariantCultureIgnoreCase))
-            {
-                bookName = "Филимона";
-            }
-            if (bookName.StartsWith("Мих", StringComparison.InvariantCultureIgnoreCase))
-            {
-                bookName = "Міхея";
-            }
+            bookName = NormalizeBookName(bookName);
             foreach (var book in BooksOfBible)
             {
                 if (book.Key.Contains(bookName, StringComparison.InvariantCultureIgnoreCase))
@@ -424,6 +428,27 @@ namespace SabbathSchoolLessonBuilder
             }
 
             return url;
+        }
+
+        /// <summary>
+        /// Corrects abbreviated Bible book names that don't substring-match their
+        /// full name in <see cref="BooksOfBible"/> (e.g. abbreviations spelled with
+        /// Russian letters instead of Ukrainian ones). Pure lookup, no side effects,
+        /// so it can be tested independently of <see cref="GetBibleLink"/>.
+        /// Matches are checked longest-key-first so results stay deterministic even
+        /// if a future correction's key happens to be a prefix of another one's.
+        /// </summary>
+        private static string NormalizeBookName(string bookName)
+        {
+            foreach (var correction in BookNameCorrections.OrderByDescending(c => c.Key.Length))
+            {
+                if (bookName.StartsWith(correction.Key, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return correction.Value;
+                }
+            }
+
+            return bookName;
         }
 
         private static XWPFHyperlinkRun CreateHyperlinkRun(XWPFParagraph paragraph, string uri)

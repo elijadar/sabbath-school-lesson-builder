@@ -96,7 +96,6 @@ namespace SabbathSchoolLessonBuilder
         {
             logger.Information("Creation of Sabbath School lessons!");
 
-            //HyperlinkExample();
             var sss = GetHeaders(logger).Result;
             CreateDocs(sss, logger).Wait();
             
@@ -113,6 +112,7 @@ namespace SabbathSchoolLessonBuilder
             var response = await client.GetAsync($"{BaseUrl}/index.json");
             if (!response.IsSuccessStatusCode)
             {
+                logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/index.json", response.StatusCode);
                 return res;
             }
 
@@ -130,6 +130,7 @@ namespace SabbathSchoolLessonBuilder
                 response = await client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/index.json");
                 if (!response.IsSuccessStatusCode)
                 {
+                    logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/index.json", response.StatusCode);
                     continue;
                 }
 
@@ -149,6 +150,7 @@ namespace SabbathSchoolLessonBuilder
                     response = await client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
                     if (!response.IsSuccessStatusCode)
                     {
+                        logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/days/0{dayCounter}/read/index.json", response.StatusCode);
                         continue;
                     }
 
@@ -199,7 +201,7 @@ namespace SabbathSchoolLessonBuilder
                             question = Regex.Replace(question, @"^Прочитайте\s*", "");
                             question = Regex.Replace(question, @"^\s*див.\s*", "");
                             question = Regex.Replace(question, @"^\s*текст\s*", "");
-                            questions.Add(new Question(verses, question, questionNode));
+                            questions.Add(new Question(verses, question));
                         }
                     }
 
@@ -238,8 +240,23 @@ namespace SabbathSchoolLessonBuilder
                 return (res, res);
             }
 
-            var bbl = verse.Substring(verse.IndexOf('(') + 1, verse.IndexOf(')') - verse.IndexOf('(') - 1);
-            res = verse.TrimStart('«').Substring(0, verse.IndexOf('»') - 1);
+            var openIdx = verse.IndexOf('(');
+            var closeIdx = verse.IndexOf(')');
+            if (closeIdx < 0 || closeIdx < openIdx)
+            {
+                return (res, res);
+            }
+
+            var bbl = verse.Substring(openIdx + 1, closeIdx - openIdx - 1);
+
+            var trimmed = verse.TrimStart('«');
+            var closingGuillemetIdx = trimmed.IndexOf('»');
+            if (closingGuillemetIdx < 1)
+            {
+                return (res, res);
+            }
+
+            res = trimmed.Substring(0, closingGuillemetIdx - 1);
             return (bbl, res);
         }
 
@@ -308,19 +325,6 @@ namespace SabbathSchoolLessonBuilder
                         {
                             var innerText = question.Text;
                             innerText = innerText.Replace("–", "-");
-                            //var innerText = question.Node.InnerText.Trim();
-                            //innerText = Regex.Replace(innerText, @"^\d+\. ", "");
-                            //innerText = Regex.Replace(innerText, @"^Прочитайте\s*", "");
-                            //innerText = innerText.Replace("–", "-");
-                            //var qNodes = question.Node.SelectNodes(".//a[@class='verse']");
-                            //if (qNodes?.Any() ?? false)
-                            //{
-                            //    var tmpVerses = qNodes.Select(x => x.InnerText.Replace("–", "-")).ToList();
-                            //    foreach (var tmpVerse in tmpVerses)
-                            //    {
-                            //        verses.AddRange(tmpVerse.Split(";").Select(x => x.Trim()));
-                            //    }
-                            //}
 
                             foreach (var verse in question.Verses)
                             {
@@ -431,25 +435,5 @@ namespace SabbathSchoolLessonBuilder
             return paragraph.CreateHyperlinkRun(rId);
         }
 
-        public static void HyperlinkExample()
-        {
-            using XWPFDocument doc = new XWPFDocument();
-            XWPFParagraph paragraph = doc.CreateParagraph();
-            XWPFRun run = paragraph.CreateRun();
-            //run.SetText("This is a text paragraph having ");
-
-            XWPFHyperlinkRun hyperlinkrun = CreateHyperlinkRun(paragraph, "https://www.google.com");
-            hyperlinkrun.SetText("Google");
-            hyperlinkrun.SetColor("0000FF");
-            hyperlinkrun.Underline = UnderlinePatterns.Single;
-
-            run = paragraph.CreateRun();
-            run.AddBreak(BreakType.TEXTWRAPPING);
-            run.AppendText("Qwe 1");
-            run = paragraph.CreateRun();
-            run.SetText(" in it.");
-            using FileStream out1 = new FileStream("hyperlink.docx", FileMode.Create);
-            doc.Write(out1);
-        }
     }
 }

@@ -1,6 +1,4 @@
-﻿using HtmlAgilityPack;
-
-namespace SabbathSchoolLessonBuilder
+﻿namespace SabbathSchoolLessonBuilder
 {
     public class Ss
     {
@@ -19,16 +17,14 @@ namespace SabbathSchoolLessonBuilder
         {
         }
 
-        public Question(IList<string> verses, string text, HtmlNode node)
+        public Question(IList<string> verses, string text)
         {
             Verses = verses;
             Text = text;
-            Node = node;
         }
 
         public IList<string> Verses { get; set; }
         public string Text { get; set; }
-        public HtmlNode Node { get; set; }
 
     }
 

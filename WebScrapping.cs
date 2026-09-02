@@ -103,6 +103,8 @@ namespace SabbathSchoolLessonBuilder
             ["Мих"] = "Міхея"
         };
 
+        private static readonly HttpClient Client = new HttpClient();
+
         public static async Task Run(Serilog.ILogger logger)
         {
             logger.Information("Creation of Sabbath School lessons!");
@@ -116,11 +118,10 @@ namespace SabbathSchoolLessonBuilder
         private static async Task<IList<Ss>> GetHeaders(Serilog.ILogger logger)
         {
             var res = new List<Ss>();
-            var client = new HttpClient();
 
             logger.Information("Getting all lessons");
 
-            var response = await client.GetAsync($"{BaseUrl}/index.json");
+            var response = await Client.GetAsync($"{BaseUrl}/index.json");
             if (!response.IsSuccessStatusCode)
             {
                 logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/index.json", response.StatusCode);
@@ -138,7 +139,7 @@ namespace SabbathSchoolLessonBuilder
 
                 logger.Information("Getting lesson {LessonInd}", lessonInd);
 
-                response = await client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/index.json");
+                response = await Client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/index.json");
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/index.json", response.StatusCode);
@@ -158,7 +159,7 @@ namespace SabbathSchoolLessonBuilder
 
                     logger.Debug("->Getting day {DayCounter}", dayCounter + 1);
 
-                    response = await client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
+                    response = await Client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
                     if (!response.IsSuccessStatusCode)
                     {
                         logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/days/0{dayCounter}/read/index.json", response.StatusCode);

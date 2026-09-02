@@ -129,9 +129,11 @@ WebScrapping.cs:391-398).
    Fixed: `Main` is now `static async Task Main`, `WebScrapping.Run` returns
    `Task`, and both calls use `await`. See
    [issue #8](https://github.com/elijadar/sabbath-school-lesson-builder/issues/8).
-6. ⏳ **No retry/backoff for transient HTTP failures** (e.g. via Polly) and
+6. ✅ **No retry/backoff for transient HTTP failures** (e.g. via Polly) and
    **no delay/throttling between the many sequential requests** to
-   `adventech.io`.
+   `adventech.io`. Fixed: added a Polly retry pipeline and a throttle delay
+   around the `GetAsync` calls in `GetHeaders`. See
+   [issue #16](https://github.com/elijadar/sabbath-school-lesson-builder/issues/16).
 7. ⏳ **No automated tests.** The regex-heavy Ukrainian text-cleanup logic in
    `GetHeaders`/`CreateDocs` (verse-reference extraction, question-text
    trimming) is exactly the kind of fiddly logic that would benefit most from

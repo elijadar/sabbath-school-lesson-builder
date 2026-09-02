@@ -113,6 +113,7 @@ namespace SabbathSchoolLessonBuilder
             var response = await client.GetAsync($"{BaseUrl}/index.json");
             if (!response.IsSuccessStatusCode)
             {
+                logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/index.json", response.StatusCode);
                 return res;
             }
 
@@ -130,6 +131,7 @@ namespace SabbathSchoolLessonBuilder
                 response = await client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/index.json");
                 if (!response.IsSuccessStatusCode)
                 {
+                    logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/index.json", response.StatusCode);
                     continue;
                 }
 
@@ -149,6 +151,7 @@ namespace SabbathSchoolLessonBuilder
                     response = await client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
                     if (!response.IsSuccessStatusCode)
                     {
+                        logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/days/0{dayCounter}/read/index.json", response.StatusCode);
                         continue;
                     }
 

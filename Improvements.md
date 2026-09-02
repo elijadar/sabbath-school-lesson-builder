@@ -115,9 +115,11 @@ WebScrapping.cs:391-398).
    the upstream API fails at runtime (`RuntimeBinderException`) instead of at
    compile time. Defining real response types and switching to
    `System.Text.Json` would remove this risk and the Newtonsoft dependency.
-2. ⏳ **A new `HttpClient` is created per call** (`GetHeaders`) instead of one
+2. ✅ **A new `HttpClient` is created per call** (`GetHeaders`) instead of one
    shared/injected instance — the classic socket-exhaustion anti-pattern.
-   Low risk at current request volume, but easy to fix.
+   Fixed: `GetHeaders` now reuses a single `static readonly HttpClient` field
+   across all requests. See
+   [issue #13](https://github.com/elijadar/sabbath-school-lesson-builder/issues/13).
 3. ⏳ **`Year`/`Quarter` are hardcoded consts** at the top of `WebScrapping.cs`
    — the only way to scrape a different quarter is to edit source and
    rebuild. Could be read from `args`/config instead.

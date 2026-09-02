@@ -4,14 +4,14 @@ namespace SabbathSchoolLessonBuilder
 {
     public class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
             .CreateLogger();
 
-            WebScrapping.Run(Log.Logger);
+            await WebScrapping.Run(Log.Logger);
         }
     }
 }

@@ -132,11 +132,13 @@ WebScrapping.cs:391-398).
 6. ⏳ **No retry/backoff for transient HTTP failures** (e.g. via Polly) and
    **no delay/throttling between the many sequential requests** to
    `adventech.io`.
-7. ⏳ **No automated tests.** The regex-heavy Ukrainian text-cleanup logic in
+7. ✅ **No automated tests.** The regex-heavy Ukrainian text-cleanup logic in
    `GetHeaders`/`CreateDocs` (verse-reference extraction, question-text
-   trimming) is exactly the kind of fiddly logic that would benefit most from
-   unit tests, ideally after extracting it into its own testable
-   class/method.
+   trimming) was exactly the kind of fiddly logic that benefits most from unit
+   tests. Fixed: extracted the text-cleanup logic into `TextCleanup.cs` and
+   added an xUnit test project (`SabbathSchoolLessonBuilder.Tests`) covering
+   verse-reference splitting, lead-in stripping, and book-name overrides. See
+   [issue #17](https://github.com/elijadar/sabbath-school-lesson-builder/issues/17).
 8. ⏳ **Duplicate text-cleanup regex logic in two places.** The pattern of
    stripping prefixes/punctuation from question text appears both in
    `GetHeaders` (WebScrapping.cs:196-204) and again, differently, in

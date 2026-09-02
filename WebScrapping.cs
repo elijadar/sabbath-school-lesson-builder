@@ -238,8 +238,23 @@ namespace SabbathSchoolLessonBuilder
                 return (res, res);
             }
 
-            var bbl = verse.Substring(verse.IndexOf('(') + 1, verse.IndexOf(')') - verse.IndexOf('(') - 1);
-            res = verse.TrimStart('«').Substring(0, verse.IndexOf('»') - 1);
+            var openIdx = verse.IndexOf('(');
+            var closeIdx = verse.IndexOf(')');
+            if (closeIdx < 0 || closeIdx < openIdx)
+            {
+                return (res, res);
+            }
+
+            var bbl = verse.Substring(openIdx + 1, closeIdx - openIdx - 1);
+
+            var trimmed = verse.TrimStart('«');
+            var closingGuillemetIdx = trimmed.IndexOf('»');
+            if (closingGuillemetIdx < 1)
+            {
+                return (res, res);
+            }
+
+            res = trimmed.Substring(0, closingGuillemetIdx - 1);
             return (bbl, res);
         }
 

@@ -400,8 +400,7 @@ namespace SabbathSchoolLessonBuilder
 
                 logger.Debug("Saving document {Title}", ss.Title);
 
-                var quarter = (DateTime.UtcNow.Month + 3) / 3;
-                var fileName = $"Суботня школа {ss.EndDate:yyyy}.{quarter}." + (i < 9 ? "0" : string.Empty) + (i + 1) + ".docx";
+                var fileName = $"Суботня школа {ss.EndDate:yyyy}.{Quarter}." + (i < 9 ? "0" : string.Empty) + (i + 1) + ".docx";
                 await using var sw = File.Create(fileName);
                 doc.Write(sw);
                 doc.Close();

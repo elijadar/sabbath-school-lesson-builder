@@ -26,7 +26,7 @@ written to the current working directory.
 ## Usage
 
 ```powershell
-dotnet run --project "WebScrapping. SS.csproj"
+dotnet run --project SabbathSchoolLessonBuilder.csproj
 ```
 
 To generate a different quarter, edit the `Year` and `Quarter` constants at the

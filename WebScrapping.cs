@@ -206,13 +206,7 @@ namespace SabbathSchoolLessonBuilder
                             }
 
                             var question = questionNode.InnerText.Trim();
-                            question = Regex.Replace(question, @"^\d+\. ", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s+тексти\s*", "");
-                            question = Regex.Replace(question, @"^Перегляньте\s+уривок\s*", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s+уривок\s*", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s*", "");
-                            question = Regex.Replace(question, @"^\s*див.\s*", "");
-                            question = Regex.Replace(question, @"^\s*текст\s*", "");
+                            question = StripQuestionLeadIn(question);
                             questions.Add(new Question(verses, question));
                         }
                     }
@@ -242,6 +236,42 @@ namespace SabbathSchoolLessonBuilder
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Strips numbering (e.g. "1. ") and known Ukrainian lead-in phrases
+        /// ("Прочитайте ...", "Перегляньте уривок", "див.", "текст") from the very
+        /// start of a question's raw text, right after it is scraped from the lesson
+        /// HTML in <see cref="GetHeaders"/> - before any verse reference has been
+        /// extracted/removed from it.
+        /// </summary>
+        private static string StripQuestionLeadIn(string text)
+        {
+            text = Regex.Replace(text, @"^\d+\. ", "");
+            text = Regex.Replace(text, @"^Прочитайте\s+тексти\s*", "");
+            text = Regex.Replace(text, @"^Перегляньте\s+уривок\s*", "");
+            text = Regex.Replace(text, @"^Прочитайте\s+уривок\s*", "");
+            text = Regex.Replace(text, @"^Прочитайте\s*", "");
+            text = Regex.Replace(text, @"^\s*див.\s*", "");
+            text = Regex.Replace(text, @"^\s*текст\s*", "");
+            return text;
+        }
+
+        /// <summary>
+        /// Cleans up what remains of a question's text in <see cref="CreateDocs"/>
+        /// after a single embedded verse reference has just been removed from it -
+        /// stray parenthetical fragments (e.g. "(Прочитайте )") and leading
+        /// punctuation/conjunctions ("."/":"/";", "та ", "і ") left behind by the
+        /// removal. Must only run on already lead-in-stripped, verse-stripped
+        /// remnant text, not on the raw question (see <see cref="StripQuestionLeadIn"/>).
+        /// </summary>
+        private static string StripVerseRemnant(string text)
+        {
+            text = Regex.Replace(text, @"\s*\((?:Прочитайте|див\.|Див\.\s+також)?\s*\)\.*", "");
+            text = Regex.Replace(text, @"^\s*[\.\:\;] ", "");
+            text = Regex.Replace(text, @"^\s*та ", "");
+            text = Regex.Replace(text, @"^\s*і ", "");
+            return text;
         }
 
         private static (string, string) GetVerse(string verse)
@@ -348,10 +378,7 @@ namespace SabbathSchoolLessonBuilder
                                 hyperlinkRun.SetColor("0563C1");
                                 hyperlinkRun.Underline = UnderlinePatterns.Single;
                                 innerText = innerText.Replace(verse, "");
-                                innerText = Regex.Replace(innerText, @"\s*\((?:Прочитайте|див\.|Див\.\s+також)?\s*\)\.*", "");
-                                innerText = Regex.Replace(innerText, @"^\s*[\.\:\;] ", "");
-                                innerText = Regex.Replace(innerText, @"^\s*та ", "");
-                                innerText = Regex.Replace(innerText, @"^\s*і ", "");
+                                innerText = StripVerseRemnant(innerText);
                             }
                             run1 = para1.CreateRun();
                             run1.SetText($" {innerText}");

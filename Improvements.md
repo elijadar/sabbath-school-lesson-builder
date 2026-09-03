@@ -142,15 +142,20 @@ WebScrapping.cs:391-398).
    trimming) is exactly the kind of fiddly logic that would benefit most from
    unit tests, ideally after extracting it into its own testable
    class/method.
-8. ⏳ **Duplicate text-cleanup regex logic in two places.** The pattern of
-   stripping prefixes/punctuation from question text appears both in
+8. ✅ **Duplicate text-cleanup regex logic in two places.** The pattern of
+   stripping prefixes/punctuation from question text appeared both in
    `GetHeaders` (WebScrapping.cs:196-204) and again, differently, in
-   `CreateDocs` (WebScrapping.cs:338-343). When the Ukrainian text-formatting
-   rules need a tweak (and given how many special cases already exist — e.g.
-   WebScrapping.cs:391-398 — they will), there are two places to remember to
-   change, and they already diverge. Worth consolidating into one
-   `CleanQuestionText(string)` helper used by both, next time this code is
-   touched.
+   `CreateDocs` (WebScrapping.cs:338-343), and had already diverged. Fixed:
+   extracted `StripQuestionLeadIn` (used by `GetHeaders`) and
+   `StripVerseRemnant` (used by `CreateDocs`) as named helpers. A single fully
+   merged `CleanQuestionText` helper was tried first, but caused text-
+   corruption regressions since the two original call sites clean text at
+   different pipeline stages — kept as two behavior-preserving helpers
+   instead. A handful of pre-existing text-cleanup artifacts (stray
+   punctuation remnants like `? ?`/`; ; .`) were found during verification and
+   confirmed present on `main` before this change too — out of scope here,
+   left for a follow-up. See
+   [issue #18](https://github.com/elijadar/sabbath-school-lesson-builder/issues/18).
 
 ## Process notes
 

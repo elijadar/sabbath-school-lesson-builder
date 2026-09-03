@@ -26,11 +26,32 @@ written to the current working directory.
 ## Usage
 
 ```powershell
+dotnet run --project SabbathSchoolLessonBuilder.csproj [options]
+```
+
+### CLI Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--year <YYYY>` | Year for the quarter to generate (e.g., 2026) | Current year |
+| `--quarter <QQ>` | Quarter number to generate (01, 02, 03, or 04) | Current quarter |
+
+### Examples
+
+Generate the default quarter (2026, Q2):
+```powershell
 dotnet run --project SabbathSchoolLessonBuilder.csproj
 ```
 
-To generate a different quarter, edit the `Year` and `Quarter` constants at the
-top of [`WebScrapping.cs`](WebScrapping.cs) and re-run.
+Generate Q1 2025:
+```powershell
+dotnet run --project SabbathSchoolLessonBuilder.csproj --year 2025 --quarter 01
+```
+
+Generate Q4 2024:
+```powershell
+dotnet run --project SabbathSchoolLessonBuilder.csproj --year 2024 --quarter 04
+```
 
 ## Project structure
 

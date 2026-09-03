@@ -1,17 +1,16 @@
 ﻿using Serilog;
 
-namespace SabbathSchoolLessonBuilder
+namespace SabbathSchoolLessonBuilder;
+
+public class Program
 {
-    public class Program
+    static async Task Main(string[] args)
     {
-        static async Task Main(string[] args)
-        {
-            Log.Logger = new LoggerConfiguration()
+        Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
             .CreateLogger();
 
-            await WebScrapping.Run(Log.Logger, args);
-        }
+        await WebScrapping.Run(Log.Logger, args);
     }
 }

@@ -35,10 +35,11 @@ dotnet run --project SabbathSchoolLessonBuilder.csproj [options]
 |-----------|-------------|---------|
 | `--year <YYYY>` | Year for the quarter to generate (e.g., 2026) | Current year |
 | `--quarter <QQ>` | Quarter number to generate (01, 02, 03, or 04) | Current quarter |
+| `--week <N>` or `--week <N-M>` | Generate specific week(s): single week, multiple weeks, or range | All weeks |
 
 ### Examples
 
-Generate the default quarter (2026, Q2):
+Generate the default quarter (current year/quarter):
 ```powershell
 dotnet run --project SabbathSchoolLessonBuilder.csproj
 ```
@@ -53,15 +54,38 @@ Generate Q4 2024:
 dotnet run --project SabbathSchoolLessonBuilder.csproj --year 2024 --quarter 04
 ```
 
+Generate only week 1 of Q2 2026:
+```powershell
+dotnet run --project SabbathSchoolLessonBuilder.csproj --week 1
+```
+
+Generate weeks 2-4 (range) of Q2 2026:
+```powershell
+dotnet run --project SabbathSchoolLessonBuilder.csproj --week 2-4
+```
+
+Generate multiple specific weeks:
+```powershell
+dotnet run --project SabbathSchoolLessonBuilder.csproj --week 1 --week 3 --week 5
+```
+
+Generate Q1 2025, weeks 1-3:
+```powershell
+dotnet run --project SabbathSchoolLessonBuilder.csproj --year 2025 --quarter 01 --week 1-3
+```
+
 ## Project structure
 
 | File | Purpose |
 |---|---|
 | `Program.cs` | Entry point, sets up console logging (Serilog) |
-| `WebScrapping.cs` | Fetches lesson data, parses HTML, generates the `.docx` files |
+| `WebScrapping.cs` | Fetches lesson data, parses HTML, generates `.docx` files with fluent/monadic API |
+| `DocumentExtensions.cs` | Fluent extension methods for NPOI document building (paragraph chaining, hyperlinks) |
 | `Ss.cs` | Data model (`Ss`, `Day`, `Question`) |
+| `TextCleanup.cs` | Text processing and Bible reference extraction |
 | `Extensions.cs` | Text-casing helper |
-| `Template.docx` | Word template the generated documents are built from |
+| `ApiModels.cs` | API response models for Adventech deserialization |
+| `Template.docx` | Word template with styles (`Title`, `Subtitle`, `Heading2`, `Heading3`, `Normal`, `IntenseQuote`) |
 
 ## Data sources & attribution
 

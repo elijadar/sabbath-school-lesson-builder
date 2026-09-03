@@ -221,16 +221,12 @@ namespace SabbathSchoolLessonBuilder
                             var qNodes = questionNode.SelectNodes(".//a[@class='verse']");
                             if (qNodes?.Any() ?? false)
                             {
-                                var tmpVerses = qNodes.Select(x => x.InnerText.Replace("–", "-")).ToList();
+                                var tmpVerses = qNodes.Select(x => x.InnerText).ToList();
                                 foreach (var tmpVerse in tmpVerses)
                                 {
-                                    var pattern = @"([\dІ\.]{0,2}\s*[а-яА-ЯІїєюіЇЄЮ’]+\.{0,1}\s+\d+\:[\d,\-\s]+)(?:(?![\dІ\.]{0,2}\s*[а-яА-ЯІїєюіЇЄЮ’]+\.{0,1}\s+\d+\:[\d,\-\s]+).)*";
-                                    var matches = Regex.Matches(tmpVerse, pattern);
-                                    foreach (Match m in matches)
+                                    foreach (var extracted in TextCleanup.ExtractVerseReferences(tmpVerse))
                                     {
-                                        var tmpValue = Regex.Replace(m.Value.Trim(), @"^\s*[\.\:\;] ", "");
-                                        tmpValue = Regex.Replace(tmpValue, @"\s*[\,\;\.]$", "");
-                                        verses.Add(tmpValue);
+                                        verses.Add(extracted);
                                     }
                                 }
                             }
@@ -257,10 +253,17 @@ namespace SabbathSchoolLessonBuilder
                 res.Add(new Ss
                 {
                     LessonTitle = title,
+<<<<<<< HEAD
+                    Title = entry["title"],
+                    EndDate = DateTime.ParseExact(entry["end_date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                    Url = entry["full_path"],
+                    MemoryVerse = TextCleanup.ParseMemoryVerse(verse),
+=======
                     Title = entry.Title,
                     EndDate = DateTime.ParseExact(entry.EndDate, "dd/MM/yyyy", CultureInfo.InvariantCulture),
                     Url = entry.FullPath,
                     MemoryVerse = GetVerse(verse),
+>>>>>>> origin/main
                     Days = days
                 });
             }
@@ -331,7 +334,6 @@ namespace SabbathSchoolLessonBuilder
             res = trimmed.Substring(0, closingGuillemetIdx - 1);
             return (bbl, res);
         }
-
         private static async Task CreateDocs(IList<Ss> sss, Serilog.ILogger logger)
         {
             logger.Information("Creating documents");

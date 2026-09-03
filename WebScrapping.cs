@@ -372,11 +372,7 @@ namespace SabbathSchoolLessonBuilder
                                 hyperlinkRun.SetColor("0563C1");
                                 hyperlinkRun.Underline = UnderlinePatterns.Single;
                                 innerText = innerText.Replace(verse, "");
-<<<<<<< HEAD
-                                innerText = TextCleanup.CleanupAfterVerseRemoval(innerText);
-=======
                                 innerText = StripVerseRemnant(innerText);
->>>>>>> origin/main
                             }
                             run1 = para1.CreateRun();
                             run1.SetText($" {innerText}");
@@ -425,11 +421,7 @@ namespace SabbathSchoolLessonBuilder
             var refer = string.Empty;
             var verse = where.Item1.Split(' ');
             var bookName = verse[0].Trim('.').Length == 1 ? verse[1].Trim('.') : verse[0].Trim('.');
-<<<<<<< HEAD
-            bookName = TextCleanup.NormalizeBookNameOverride(bookName);
-=======
             bookName = NormalizeBookName(bookName);
->>>>>>> origin/main
             foreach (var book in BooksOfBible)
             {
                 if (book.Key.Contains(bookName, StringComparison.InvariantCultureIgnoreCase))

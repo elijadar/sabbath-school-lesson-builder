@@ -139,21 +139,13 @@ WebScrapping.cs:391-398).
    `adventech.io`.
 7. ✅ **No automated tests.** The regex-heavy Ukrainian text-cleanup logic in
    `GetHeaders`/`CreateDocs` (verse-reference extraction, question-text
-<<<<<<< HEAD
    trimming) was exactly the kind of fiddly logic that benefits most from unit
-   tests. Fixed: extracted the text-cleanup logic into `TextCleanup.cs` and
+   tests. Fixed: extracted the text-cleanup logic into a `TextCleanup` class and
    added an xUnit test project (`SabbathSchoolLessonBuilder.Tests`) covering
    verse-reference splitting, lead-in stripping, and book-name overrides. See
    [issue #17](https://github.com/elijadar/sabbath-school-lesson-builder/issues/17).
-8. ⏳ **Duplicate text-cleanup regex logic in two places.** The pattern of
-   stripping prefixes/punctuation from question text appears both in
-=======
-   trimming) is exactly the kind of fiddly logic that would benefit most from
-   unit tests, ideally after extracting it into its own testable
-   class/method.
 8. ✅ **Duplicate text-cleanup regex logic in two places.** The pattern of
    stripping prefixes/punctuation from question text appeared both in
->>>>>>> origin/main
    `GetHeaders` (WebScrapping.cs:196-204) and again, differently, in
    `CreateDocs` (WebScrapping.cs:338-343), and had already diverged. Fixed:
    extracted `StripQuestionLeadIn` (used by `GetHeaders`) and

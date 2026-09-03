@@ -387,21 +387,31 @@ public class WebScrapping
 
     private static void AddHyperlinkToRun(XWPFParagraph para, string text, string uri, string color)
     {
-        // Add external relationship directly to the document
-        string rId = para.Document.GetPackagePart().AddExternalRelationship(
+        // Add relationship directly and use its ID
+        // This creates direct-URL relationships instead of the double-layer that CreateHyperlinkRun produces
+        var rel = para.Document.GetPackagePart().AddExternalRelationship(
             uri,
             XWPFRelation.HYPERLINK.Relation
-        ).Id;
+        );
+        string rId = rel.Id;
 
-        // Create hyperlink element directly in XML to avoid NPOI's double-layer issue
-        var hyperlink = para.GetCTP().AddNewHyperlink();
+        // Manually create hyperlink element via XML to avoid double-wrapping
+        var paraCtp = para.GetCTP();
+        var hyperlink = paraCtp.AddNewHyperlink();
         hyperlink.id = rId;
 
         var run = hyperlink.AddNewR();
         var rPr = run.AddNewRPr();
-        rPr.AddNewColor().val = color;
-        rPr.AddNewU().val = NPOI.OpenXmlFormats.Wordprocessing.ST_Underline.single;
-        run.AddNewT().Value = text;
+
+        // Set color and underline
+        var colorElem = rPr.AddNewColor();
+        colorElem.val = color;
+        var underline = rPr.AddNewU();
+        underline.val = NPOI.OpenXmlFormats.Wordprocessing.ST_Underline.single;
+
+        // Set text
+        var t = run.AddNewT();
+        t.Value = text;
     }
 
     private static XWPFDocument AddMemoryVerseSection(XWPFDocument doc, (string, string) memoryVerse)

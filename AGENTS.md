@@ -73,13 +73,18 @@ When asked to implement a feature or bug fix tracked as a GitHub issue:
 
 ## Git workflow
 
+- **Never make changes directly on `main` and commit them.** Always create a
+  feature or bug-fix branch off `main` before making any changes. This ensures
+  that each unit of work is isolated and can be reviewed independently before
+  merging.
 - **One branch per unit of work.** Before starting a feature or bug fix,
   create a branch off the latest `main`:
   - Feature: `features/<very-short-name>` (e.g. `features/config-quarter`)
   - Bug fix: `bugs/<very-short-description>` (e.g. `bugs/getverse-crash`)
   Keep the branch scoped to one feature/bug — don't bundle unrelated changes
   onto it.
-- **Open a PR once the work is implemented and verified**, not before. At
+- **Always create a pull request for review** before merging any changes.
+  Open the PR once the work is implemented and verified, not before. At
   minimum, confirm `dotnet build SabbathSchoolLessonBuilder.csproj` succeeds
   before opening the PR; if the change is runtime-visible and it's practical
   to do so (network access available, etc.), do a smoke run too
@@ -103,6 +108,9 @@ When asked to implement a feature or bug fix tracked as a GitHub issue:
      OneDrive/AV/an open editor) — retry once or twice before treating it as
      a real problem; leftover worktree directories are otherwise harmless
      and can be deleted directly once unlocked.
+  4. Clean up remote branches by running `git fetch --prune origin` to
+     ensure your local repository stays in sync with remote and doesn't
+     accumulate stale branch references.
 - `gh` (GitHub CLi) is installed on this machine but may not be on `PATH` in
   a given shell. If `gh` isn't found: in git-bash run
   `export PATH="$PATH:/c/Program Files/GitHub CLI"`; in PowerShell call it

@@ -277,9 +277,9 @@ namespace SabbathSchoolLessonBuilder
 
                     days.Add(new Day
                     {
-                        Title = day.Title,
-                        EndDate = DateTime.ParseExact(day.Date, "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                        Url = day.FullPath,
+                        Title = day.Title ?? "",
+                        EndDate = DateTime.ParseExact(day.Date ?? "", "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                        Url = day.FullPath ?? "",
                         Questions = questions
                     });
                 }
@@ -288,10 +288,10 @@ namespace SabbathSchoolLessonBuilder
 
                 res.Add(new Ss
                 {
-                    LessonTitle = title,
-                    Title = entry.Title,
-                    EndDate = DateTime.ParseExact(entry.EndDate, "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                    Url = entry.FullPath,
+                    LessonTitle = title ?? "",
+                    Title = entry.Title ?? "",
+                    EndDate = DateTime.ParseExact(entry.EndDate ?? "", "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                    Url = entry.FullPath ?? "",
                     MemoryVerse = TextCleanup.ParseMemoryVerse(verse),
                     Days = days
                 });

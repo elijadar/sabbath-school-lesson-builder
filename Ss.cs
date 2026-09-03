@@ -2,19 +2,21 @@
 {
     public class Ss
     {
-        public string LessonTitle { get; set; }
-        public string Title { get; set; }
-        public string Url { get; set; }
+        public string LessonTitle { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Url { get; set; } = "";
         public DateTime EndDate { get; set; }
         public (string, string) MemoryVerse { get; set; }
 
-        public IList<Day> Days { get; set; }
+        public IList<Day> Days { get; set; } = [];
     }
 
     public class Question
     {
         public Question()
         {
+            Verses = [];
+            Text = "";
         }
 
         public Question(IList<string> verses, string text)
@@ -30,9 +32,9 @@
 
     public class Day
     {
-        public string Title { get; set; }
-        public string Url { get; set; }
+        public string Title { get; set; } = "";
+        public string Url { get; set; } = "";
         public DateTime EndDate { get; set; }
-        public IList<Question> Questions { get; set; }
+        public IList<Question> Questions { get; set; } = [];
     }
 }

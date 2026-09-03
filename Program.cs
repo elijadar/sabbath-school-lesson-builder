@@ -11,7 +11,7 @@ namespace SabbathSchoolLessonBuilder
             .WriteTo.Console()
             .CreateLogger();
 
-            await WebScrapping.Run(Log.Logger);
+            await WebScrapping.Run(Log.Logger, args);
         }
     }
 }

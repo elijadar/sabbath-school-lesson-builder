@@ -8,9 +8,11 @@ namespace SabbathSchoolLessonBuilder
 {
     public class WebScrapping
     {
-        private const string Year = "2026";
-        private const string Quarter = "02";
-        private const string BaseUrl = $"https://sabbath-school-stage.adventech.io/api/v2/uk/quarterlies/{Year}-{Quarter}";
+        private const string DefaultYear = "2026";
+        private const string DefaultQuarter = "02";
+        private static string Year = DefaultYear;
+        private static string Quarter = DefaultQuarter;
+        private static string BaseUrl => $"https://sabbath-school-stage.adventech.io/api/v2/uk/quarterlies/{Year}-{Quarter}";
         private const string BibleUrl = "https://www.bible.com/uk/bible/3786/";
 
         private static readonly IReadOnlyList<(string Key, string Value)> BooksOfBible = new List<(string Key, string Value)>
@@ -105,14 +107,37 @@ namespace SabbathSchoolLessonBuilder
 
         private static readonly HttpClient Client = new HttpClient();
 
-        public static async Task Run(Serilog.ILogger logger)
+        public static async Task Run(Serilog.ILogger logger, string[]? args = null)
         {
+            ParseArgs(args, logger);
+
             logger.Information("Creation of Sabbath School lessons!");
 
             var sss = await GetHeaders(logger);
             await CreateDocs(sss, logger);
 
             logger.Information("Sabbath School lessons were created!");
+        }
+
+        private static void ParseArgs(string[]? args, Serilog.ILogger logger)
+        {
+            if (args is not null)
+            {
+                for (var i = 0; i < args.Length; i++)
+                {
+                    switch (args[i])
+                    {
+                        case "--year" when i + 1 < args.Length:
+                            Year = args[++i];
+                            break;
+                        case "--quarter" when i + 1 < args.Length:
+                            Quarter = args[++i];
+                            break;
+                    }
+                }
+            }
+
+            logger.Information("Using Year={Year}, Quarter={Quarter}", Year, Quarter);
         }
 
         private static async Task<IList<Ss>> GetHeaders(Serilog.ILogger logger)

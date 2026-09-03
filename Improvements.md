@@ -120,9 +120,15 @@ WebScrapping.cs:391-398).
    Fixed: `GetHeaders` now reuses a single `static readonly HttpClient` field
    across all requests. See
    [issue #13](https://github.com/elijadar/sabbath-school-lesson-builder/issues/13).
-3. ⏳ **`Year`/`Quarter` are hardcoded consts** at the top of `WebScrapping.cs`
-   — the only way to scrape a different quarter is to edit source and
-   rebuild. Could be read from `args`/config instead.
+3. ✅ **`Year`/`Quarter` are hardcoded consts** at the top of `WebScrapping.cs`
+   — the only way to scrape a different quarter was to edit source and
+   rebuild. Fixed: `Year`/`Quarter` are now mutable static fields with the
+   previous hardcoded values as defaults, overridable via `--year`/`--quarter`
+   command-line args parsed in `Program.cs`/`WebScrapping.Run`. A config-file
+   option was considered but left out as unnecessary ceremony for a tool with
+   two settings — CLI args cover the "scrape a different quarter" use case
+   directly. See
+   [issue #14](https://github.com/elijadar/sabbath-school-lesson-builder/issues/14).
 4. ✅ **`GetBibleLink` hand-parses Bible references** via string splitting,
    with two hardcoded book-name corrections (`"Филм"` → `"Филимона"`,
    `"Мих"` → `"Міхея"`). Fixed: the corrections now live in a

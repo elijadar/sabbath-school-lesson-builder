@@ -495,11 +495,16 @@ public class WebScrapping
             innerText = StripVerseRemnant(innerText);
         }
 
-        // Add space and remaining text, trimming innerText and ensuring space separation
-        if (!string.IsNullOrWhiteSpace(innerText))
+        // Always add space after verses before remaining text
+        var trimmedText = innerText.TrimStart();
+        if (!string.IsNullOrEmpty(trimmedText))
         {
+            var spaceRun = new Run();
+            spaceRun.Append(new Text { Text = " " });
+            para.Append(spaceRun);
+
             var textRun = new Run();
-            var text = new Text { Text = " " + innerText.TrimStart() };
+            var text = new Text { Text = trimmedText };
             text.Space = SpaceProcessingModeValues.Preserve;
             textRun.Append(text);
             para.Append(textRun);

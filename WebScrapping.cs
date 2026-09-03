@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using NPOI.XWPF.UserModel;
 
 namespace SabbathSchoolLessonBuilder
@@ -94,6 +94,11 @@ namespace SabbathSchoolLessonBuilder
             "П'ятниця. "
         };
 
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
         // Abbreviated book names that don't line up with a substring match against
         // BooksOfBible (e.g. Russian-spelled abbreviations vs. Ukrainian full names,
         // or abbreviations that skip letters present in the full name) get corrected
@@ -154,10 +159,10 @@ namespace SabbathSchoolLessonBuilder
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            dynamic titlesObj = JsonConvert.DeserializeObject(content) ?? string.Empty;
+            var titlesObj = JsonSerializer.Deserialize<QuarterlyIndexResponse>(content, JsonOptions);
             var lessonCounter = 0;
-            var title = titlesObj["quarterly"]["title"].Value;
-            foreach (dynamic entry in titlesObj["lessons"])
+            var title = titlesObj?.Quarterly?.Title;
+            foreach (var entry in titlesObj?.Lessons ?? Array.Empty<LessonIndexEntry>())
             {
                 var days = new List<Day>();
                 var lessonInd = lessonCounter++ < 9 ? "0" + lessonCounter : lessonCounter.ToString();
@@ -172,12 +177,12 @@ namespace SabbathSchoolLessonBuilder
                 }
 
                 content = await response.Content.ReadAsStringAsync();
-                dynamic daysObj = JsonConvert.DeserializeObject(content);
+                var daysObj = JsonSerializer.Deserialize<LessonDaysResponse>(content, JsonOptions);
                 var dayCounter = 0;
                 var verse = string.Empty;
-                foreach (var day in daysObj["days"])
+                foreach (var day in daysObj?.Days ?? Array.Empty<DayIndexEntry>())
                 {
-                    if (day["id"] == "teacher-comments" || day["id"] == "commentary")
+                    if (day.Id == "teacher-comments" || day.Id == "commentary")
                     {
                         continue;
                     }
@@ -192,8 +197,8 @@ namespace SabbathSchoolLessonBuilder
                     }
 
                     content = await response.Content.ReadAsStringAsync();
-                    dynamic dayObj = JsonConvert.DeserializeObject(content);
-                    var lessonCont = dayObj["content"].ToString();
+                    var dayObj = JsonSerializer.Deserialize<DayReadResponse>(content, JsonOptions);
+                    var lessonCont = dayObj?.Content ?? string.Empty;
                     var htmlDocument = new HtmlDocument();
                     htmlDocument.LoadHtml(lessonCont);
                     var element = htmlDocument.DocumentNode.SelectSingleNode("blockquote");
@@ -240,9 +245,9 @@ namespace SabbathSchoolLessonBuilder
 
                     days.Add(new Day
                     {
-                        Title = day["title"],
-                        EndDate = DateTime.ParseExact(day["date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                        Url = day["full_path"],
+                        Title = day.Title,
+                        EndDate = DateTime.ParseExact(day.Date, "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                        Url = day.FullPath,
                         Questions = questions
                     });
                 }
@@ -252,9 +257,9 @@ namespace SabbathSchoolLessonBuilder
                 res.Add(new Ss
                 {
                     LessonTitle = title,
-                    Title = entry["title"],
-                    EndDate = DateTime.ParseExact(entry["end_date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                    Url = entry["full_path"],
+                    Title = entry.Title,
+                    EndDate = DateTime.ParseExact(entry.EndDate, "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                    Url = entry.FullPath,
                     MemoryVerse = GetVerse(verse),
                     Days = days
                 });

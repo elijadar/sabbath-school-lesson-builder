@@ -110,11 +110,13 @@ WebScrapping.cs:391-398).
 
 ## Still open (not yet actioned)
 
-1. ⏳ **`dynamic` + Newtonsoft.Json throughout `GetHeaders`.** API responses
-   are deserialized as `dynamic` instead of typed DTOs, so a shape change in
-   the upstream API fails at runtime (`RuntimeBinderException`) instead of at
-   compile time. Defining real response types and switching to
-   `System.Text.Json` would remove this risk and the Newtonsoft dependency.
+1. ✅ **`dynamic` + Newtonsoft.Json throughout `GetHeaders`.** API responses
+   were deserialized as `dynamic` instead of typed DTOs, so a shape change in
+   the upstream API failed at runtime (`RuntimeBinderException`) instead of at
+   compile time. Fixed: added typed response DTOs (`ApiModels.cs`) and switched
+   `GetHeaders` to `System.Text.Json.JsonSerializer.Deserialize<T>`, removing
+   the Newtonsoft.Json dependency. See
+   [issue #12](https://github.com/elijadar/sabbath-school-lesson-builder/issues/12).
 2. ✅ **A new `HttpClient` is created per call** (`GetHeaders`) instead of one
    shared/injected instance — the classic socket-exhaustion anti-pattern.
    Fixed: `GetHeaders` now reuses a single `static readonly HttpClient` field

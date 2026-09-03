@@ -385,22 +385,23 @@ public class WebScrapping
             .AddParagraph("Normal", "Привітання");
     }
 
-    private static XWPFHyperlinkRun CreateHyperlinkRun(XWPFParagraph paragraph, string uri)
+    private static void AddHyperlinkToRun(XWPFParagraph para, string text, string uri, string color)
     {
-        string rId = paragraph.Document.GetPackagePart().AddExternalRelationship(
+        // Add external relationship directly to the document
+        string rId = para.Document.GetPackagePart().AddExternalRelationship(
             uri,
             XWPFRelation.HYPERLINK.Relation
         ).Id;
 
-        return paragraph.CreateHyperlinkRun(rId);
-    }
+        // Create hyperlink element directly in XML to avoid NPOI's double-layer issue
+        var hyperlink = para.GetCTP().AddNewHyperlink();
+        hyperlink.id = rId;
 
-    private static void AddHyperlinkToRun(XWPFParagraph para, string text, string uri, string color)
-    {
-        var hyperlinkRun = CreateHyperlinkRun(para, uri);
-        hyperlinkRun.SetText(text);
-        hyperlinkRun.SetColor(color);
-        hyperlinkRun.Underline = UnderlinePatterns.Single;
+        var run = hyperlink.AddNewR();
+        var rPr = run.AddNewRPr();
+        rPr.AddNewColor().val = color;
+        rPr.AddNewU().val = NPOI.OpenXmlFormats.Wordprocessing.ST_Underline.single;
+        run.AddNewT().Value = text;
     }
 
     private static XWPFDocument AddMemoryVerseSection(XWPFDocument doc, (string, string) memoryVerse)

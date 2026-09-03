@@ -110,19 +110,27 @@ WebScrapping.cs:391-398).
 
 ## Still open (not yet actioned)
 
-1. ⏳ **`dynamic` + Newtonsoft.Json throughout `GetHeaders`.** API responses
-   are deserialized as `dynamic` instead of typed DTOs, so a shape change in
-   the upstream API fails at runtime (`RuntimeBinderException`) instead of at
-   compile time. Defining real response types and switching to
-   `System.Text.Json` would remove this risk and the Newtonsoft dependency.
+1. ✅ **`dynamic` + Newtonsoft.Json throughout `GetHeaders`.** API responses
+   were deserialized as `dynamic` instead of typed DTOs, so a shape change in
+   the upstream API failed at runtime (`RuntimeBinderException`) instead of at
+   compile time. Fixed: added typed response DTOs (`ApiModels.cs`) and switched
+   `GetHeaders` to `System.Text.Json.JsonSerializer.Deserialize<T>`, removing
+   the Newtonsoft.Json dependency. See
+   [issue #12](https://github.com/elijadar/sabbath-school-lesson-builder/issues/12).
 2. ✅ **A new `HttpClient` is created per call** (`GetHeaders`) instead of one
    shared/injected instance — the classic socket-exhaustion anti-pattern.
    Fixed: `GetHeaders` now reuses a single `static readonly HttpClient` field
    across all requests. See
    [issue #13](https://github.com/elijadar/sabbath-school-lesson-builder/issues/13).
-3. ⏳ **`Year`/`Quarter` are hardcoded consts** at the top of `WebScrapping.cs`
-   — the only way to scrape a different quarter is to edit source and
-   rebuild. Could be read from `args`/config instead.
+3. ✅ **`Year`/`Quarter` are hardcoded consts** at the top of `WebScrapping.cs`
+   — the only way to scrape a different quarter was to edit source and
+   rebuild. Fixed: `Year`/`Quarter` are now mutable static fields with the
+   previous hardcoded values as defaults, overridable via `--year`/`--quarter`
+   command-line args parsed in `Program.cs`/`WebScrapping.Run`. A config-file
+   option was considered but left out as unnecessary ceremony for a tool with
+   two settings — CLI args cover the "scrape a different quarter" use case
+   directly. See
+   [issue #14](https://github.com/elijadar/sabbath-school-lesson-builder/issues/14).
 4. ✅ **`GetBibleLink` hand-parses Bible references** via string splitting,
    with two hardcoded book-name corrections (`"Филм"` → `"Филимона"`,
    `"Мих"` → `"Міхея"`). Fixed: the corrections now live in a
@@ -139,11 +147,13 @@ WebScrapping.cs:391-398).
    `adventech.io`. Fixed: added a Polly retry pipeline and a throttle delay
    around the `GetAsync` calls in `GetHeaders`. See
    [issue #16](https://github.com/elijadar/sabbath-school-lesson-builder/issues/16).
-7. ⏳ **No automated tests.** The regex-heavy Ukrainian text-cleanup logic in
+7. ✅ **No automated tests.** The regex-heavy Ukrainian text-cleanup logic in
    `GetHeaders`/`CreateDocs` (verse-reference extraction, question-text
-   trimming) is exactly the kind of fiddly logic that would benefit most from
-   unit tests, ideally after extracting it into its own testable
-   class/method.
+   trimming) was exactly the kind of fiddly logic that benefits most from unit
+   tests. Fixed: extracted the text-cleanup logic into a `TextCleanup` class and
+   added an xUnit test project (`SabbathSchoolLessonBuilder.Tests`) covering
+   verse-reference splitting, lead-in stripping, and book-name overrides. See
+   [issue #17](https://github.com/elijadar/sabbath-school-lesson-builder/issues/17).
 8. ✅ **Duplicate text-cleanup regex logic in two places.** The pattern of
    stripping prefixes/punctuation from question text appeared both in
    `GetHeaders` (WebScrapping.cs:196-204) and again, differently, in

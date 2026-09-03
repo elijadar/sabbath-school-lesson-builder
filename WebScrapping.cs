@@ -1,8 +1,11 @@
 ﻿using System.Globalization;
+<<<<<<< HEAD
 using System.Net;
+=======
+using System.Text.Json;
+>>>>>>> origin/main
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using NPOI.XWPF.UserModel;
 using Polly;
 using Polly.Retry;
@@ -11,9 +14,11 @@ namespace SabbathSchoolLessonBuilder
 {
     public class WebScrapping
     {
-        private const string Year = "2026";
-        private const string Quarter = "02";
-        private const string BaseUrl = $"https://sabbath-school-stage.adventech.io/api/v2/uk/quarterlies/{Year}-{Quarter}";
+        private const string DefaultYear = "2026";
+        private const string DefaultQuarter = "02";
+        private static string Year = DefaultYear;
+        private static string Quarter = DefaultQuarter;
+        private static string BaseUrl => $"https://sabbath-school-stage.adventech.io/api/v2/uk/quarterlies/{Year}-{Quarter}";
         private const string BibleUrl = "https://www.bible.com/uk/bible/3786/";
 
         // Delay between sequential requests to adventech.io, so we're a well-behaved API citizen.
@@ -114,6 +119,11 @@ namespace SabbathSchoolLessonBuilder
             "П'ятниця. "
         };
 
+        private static readonly JsonSerializerOptions JsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
         // Abbreviated book names that don't line up with a substring match against
         // BooksOfBible (e.g. Russian-spelled abbreviations vs. Ukrainian full names,
         // or abbreviations that skip letters present in the full name) get corrected
@@ -127,8 +137,10 @@ namespace SabbathSchoolLessonBuilder
 
         private static readonly HttpClient Client = new HttpClient();
 
-        public static async Task Run(Serilog.ILogger logger)
+        public static async Task Run(Serilog.ILogger logger, string[]? args = null)
         {
+            ParseArgs(args, logger);
+
             logger.Information("Creation of Sabbath School lessons!");
 
             var sss = await GetHeaders(logger);
@@ -137,6 +149,7 @@ namespace SabbathSchoolLessonBuilder
             logger.Information("Sabbath School lessons were created!");
         }
 
+<<<<<<< HEAD
         // Fetches a URL with retry/backoff for transient failures, then throttles before
         // returning so the next sequential request doesn't immediately follow it.
         private static async Task<HttpResponseMessage> GetWithRetryAsync(string url)
@@ -149,6 +162,27 @@ namespace SabbathSchoolLessonBuilder
             await Task.Delay(RequestThrottleDelay);
 
             return response;
+=======
+        private static void ParseArgs(string[]? args, Serilog.ILogger logger)
+        {
+            if (args is not null)
+            {
+                for (var i = 0; i < args.Length; i++)
+                {
+                    switch (args[i])
+                    {
+                        case "--year" when i + 1 < args.Length:
+                            Year = args[++i];
+                            break;
+                        case "--quarter" when i + 1 < args.Length:
+                            Quarter = args[++i];
+                            break;
+                    }
+                }
+            }
+
+            logger.Information("Using Year={Year}, Quarter={Quarter}", Year, Quarter);
+>>>>>>> origin/main
         }
 
         private static async Task<IList<Ss>> GetHeaders(Serilog.ILogger logger)
@@ -165,10 +199,10 @@ namespace SabbathSchoolLessonBuilder
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            dynamic titlesObj = JsonConvert.DeserializeObject(content) ?? string.Empty;
+            var titlesObj = JsonSerializer.Deserialize<QuarterlyIndexResponse>(content, JsonOptions);
             var lessonCounter = 0;
-            var title = titlesObj["quarterly"]["title"].Value;
-            foreach (dynamic entry in titlesObj["lessons"])
+            var title = titlesObj?.Quarterly?.Title;
+            foreach (var entry in titlesObj?.Lessons ?? Array.Empty<LessonIndexEntry>())
             {
                 var days = new List<Day>();
                 var lessonInd = lessonCounter++ < 9 ? "0" + lessonCounter : lessonCounter.ToString();
@@ -183,12 +217,12 @@ namespace SabbathSchoolLessonBuilder
                 }
 
                 content = await response.Content.ReadAsStringAsync();
-                dynamic daysObj = JsonConvert.DeserializeObject(content);
+                var daysObj = JsonSerializer.Deserialize<LessonDaysResponse>(content, JsonOptions);
                 var dayCounter = 0;
                 var verse = string.Empty;
-                foreach (var day in daysObj["days"])
+                foreach (var day in daysObj?.Days ?? Array.Empty<DayIndexEntry>())
                 {
-                    if (day["id"] == "teacher-comments" || day["id"] == "commentary")
+                    if (day.Id == "teacher-comments" || day.Id == "commentary")
                     {
                         continue;
                     }
@@ -203,8 +237,8 @@ namespace SabbathSchoolLessonBuilder
                     }
 
                     content = await response.Content.ReadAsStringAsync();
-                    dynamic dayObj = JsonConvert.DeserializeObject(content);
-                    var lessonCont = dayObj["content"].ToString();
+                    var dayObj = JsonSerializer.Deserialize<DayReadResponse>(content, JsonOptions);
+                    var lessonCont = dayObj?.Content ?? string.Empty;
                     var htmlDocument = new HtmlDocument();
                     htmlDocument.LoadHtml(lessonCont);
                     var element = htmlDocument.DocumentNode.SelectSingleNode("blockquote");
@@ -227,16 +261,12 @@ namespace SabbathSchoolLessonBuilder
                             var qNodes = questionNode.SelectNodes(".//a[@class='verse']");
                             if (qNodes?.Any() ?? false)
                             {
-                                var tmpVerses = qNodes.Select(x => x.InnerText.Replace("–", "-")).ToList();
+                                var tmpVerses = qNodes.Select(x => x.InnerText).ToList();
                                 foreach (var tmpVerse in tmpVerses)
                                 {
-                                    var pattern = @"([\dІ\.]{0,2}\s*[а-яА-ЯІїєюіЇЄЮ’]+\.{0,1}\s+\d+\:[\d,\-\s]+)(?:(?![\dІ\.]{0,2}\s*[а-яА-ЯІїєюіЇЄЮ’]+\.{0,1}\s+\d+\:[\d,\-\s]+).)*";
-                                    var matches = Regex.Matches(tmpVerse, pattern);
-                                    foreach (Match m in matches)
+                                    foreach (var extracted in TextCleanup.ExtractVerseReferences(tmpVerse))
                                     {
-                                        var tmpValue = Regex.Replace(m.Value.Trim(), @"^\s*[\.\:\;] ", "");
-                                        tmpValue = Regex.Replace(tmpValue, @"\s*[\,\;\.]$", "");
-                                        verses.Add(tmpValue);
+                                        verses.Add(extracted);
                                     }
                                 }
                             }
@@ -251,9 +281,9 @@ namespace SabbathSchoolLessonBuilder
 
                     days.Add(new Day
                     {
-                        Title = day["title"],
-                        EndDate = DateTime.ParseExact(day["date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                        Url = day["full_path"],
+                        Title = day.Title,
+                        EndDate = DateTime.ParseExact(day.Date, "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                        Url = day.FullPath,
                         Questions = questions
                     });
                 }
@@ -263,10 +293,17 @@ namespace SabbathSchoolLessonBuilder
                 res.Add(new Ss
                 {
                     LessonTitle = title,
+<<<<<<< HEAD
                     Title = entry["title"],
                     EndDate = DateTime.ParseExact(entry["end_date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
                     Url = entry["full_path"],
+                    MemoryVerse = TextCleanup.ParseMemoryVerse(verse),
+=======
+                    Title = entry.Title,
+                    EndDate = DateTime.ParseExact(entry.EndDate, "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                    Url = entry.FullPath,
                     MemoryVerse = GetVerse(verse),
+>>>>>>> origin/main
                     Days = days
                 });
             }
@@ -337,7 +374,6 @@ namespace SabbathSchoolLessonBuilder
             res = trimmed.Substring(0, closingGuillemetIdx - 1);
             return (bbl, res);
         }
-
         private static async Task CreateDocs(IList<Ss> sss, Serilog.ILogger logger)
         {
             logger.Information("Creating documents");

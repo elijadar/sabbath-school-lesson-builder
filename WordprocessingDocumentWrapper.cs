@@ -51,10 +51,19 @@ public class WordprocessingDocumentWrapper : IDisposable
 
     public void ClearBody()
     {
+        // Preserve SectionProperties (contains page size, margins, etc.)
+        var sectionProperties = Body.Elements<SectionProperties>().FirstOrDefault();
+
         var elementsToRemove = Body.ChildElements.ToList();
         foreach (var element in elementsToRemove)
         {
             element.Remove();
+        }
+
+        // Re-add section properties to preserve template formatting
+        if (sectionProperties != null)
+        {
+            Body.Append(sectionProperties);
         }
     }
 

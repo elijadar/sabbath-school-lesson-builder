@@ -1,9 +1,6 @@
 ﻿using System.Globalization;
-<<<<<<< HEAD
 using System.Net;
-=======
 using System.Text.Json;
->>>>>>> origin/main
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using NPOI.XWPF.UserModel;
@@ -149,20 +146,6 @@ namespace SabbathSchoolLessonBuilder
             logger.Information("Sabbath School lessons were created!");
         }
 
-<<<<<<< HEAD
-        // Fetches a URL with retry/backoff for transient failures, then throttles before
-        // returning so the next sequential request doesn't immediately follow it.
-        private static async Task<HttpResponseMessage> GetWithRetryAsync(string url)
-        {
-            var response = await RetryPipeline.ExecuteAsync(
-                static async (state, ct) => await state.Client.GetAsync(state.Url, ct),
-                (Client: Client, Url: url),
-                CancellationToken.None);
-
-            await Task.Delay(RequestThrottleDelay);
-
-            return response;
-=======
         private static void ParseArgs(string[]? args, Serilog.ILogger logger)
         {
             if (args is not null)
@@ -182,7 +165,20 @@ namespace SabbathSchoolLessonBuilder
             }
 
             logger.Information("Using Year={Year}, Quarter={Quarter}", Year, Quarter);
->>>>>>> origin/main
+        }
+
+        // Fetches a URL with retry/backoff for transient failures, then throttles before
+        // returning so the next sequential request doesn't immediately follow it.
+        private static async Task<HttpResponseMessage> GetWithRetryAsync(string url)
+        {
+            var response = await RetryPipeline.ExecuteAsync(
+                static async (state, ct) => await state.Client.GetAsync(state.Url, ct),
+                (Client: Client, Url: url),
+                CancellationToken.None);
+
+            await Task.Delay(RequestThrottleDelay);
+
+            return response;
         }
 
         private static async Task<IList<Ss>> GetHeaders(Serilog.ILogger logger)

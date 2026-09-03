@@ -5,12 +5,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AcceptNPOIOSMFLicense>true</AcceptNPOIOSMFLicense>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.13.0" />
     <PackageReference Include="Humanizer" Version="3.0.10" />
-    <PackageReference Include="NPOI" Version="2.7.6" />
+    <PackageReference Include="NPOI" Version="2.8.0" />
     <PackageReference Include="Polly" Version="8.7.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
   </ItemGroup>

@@ -474,8 +474,10 @@ public class WebScrapping
         var innerText = question.Text.Replace("–", "-");
 
         var firstRun = true;
-        foreach (var verse in question.Verses)
+        for (var i = 0; i < question.Verses.Count; i++)
         {
+            var verse = question.Verses[i];
+
             if (firstRun)
             {
                 var run = new Run();
@@ -485,7 +487,8 @@ public class WebScrapping
             }
 
             var uri = GetBibleLink((verse, verse));
-            var verseText = question.Verses.Count > 1 ? verse + "; " : verse;
+            var isLastVerse = i == question.Verses.Count - 1;
+            var verseText = question.Verses.Count > 1 && !isLastVerse ? verse + "; " : verse;
             AddHyperlinkToRun(para, doc, verseText, uri, "0563C1");
 
             innerText = innerText.Replace(verse, "");

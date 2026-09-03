@@ -1,54 +1,92 @@
-using NPOI.XWPF.UserModel;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace SabbathSchoolLessonBuilder;
 
 public static class DocumentExtensions
 {
-    public static XWPFDocument AddParagraph(this XWPFDocument doc, string style, string text)
+    public static Body AddParagraph(this Body body, string style, string text)
     {
-        doc.CreateParagraph()
-            .WithStyle(style)
-            .WithText(text);
-        return doc;
+        var para = new Paragraph();
+        var pPr = new ParagraphProperties();
+        pPr.Append(new ParagraphStyleId { Val = style });
+        para.Append(pPr);
+
+        var run = new Run();
+        var t = new Text { Text = text };
+        run.Append(t);
+        para.Append(run);
+
+        body.Append(para);
+        return body;
     }
 
-    public static XWPFParagraph WithStyle(this XWPFParagraph para, string style)
+    public static Paragraph WithStyle(this Paragraph para, string style)
     {
-        para.Style = style;
+        var pPr = para.ParagraphProperties ?? new ParagraphProperties();
+        pPr.ParagraphStyleId = new ParagraphStyleId { Val = style };
+        if (para.ParagraphProperties == null)
+        {
+            para.PrependChild(pPr);
+        }
         return para;
     }
 
-    public static XWPFParagraph WithText(this XWPFParagraph para, string text)
+    public static Paragraph WithText(this Paragraph para, string text)
     {
-        para.CreateRun().SetText(text);
+        var run = new Run();
+        var t = new Text { Text = text };
+        run.Append(t);
+        para.Append(run);
         return para;
     }
 
-    public static XWPFRun WithColor(this XWPFRun run, string color)
+    public static Run WithColor(this Run run, string color)
     {
-        run.SetColor(color);
+        var rPr = run.RunProperties ?? new RunProperties();
+        rPr.Color = new Color { Val = color };
+        if (run.RunProperties == null)
+        {
+            run.PrependChild(rPr);
+        }
         return run;
     }
 
-    public static XWPFRun WithUnderline(this XWPFRun run)
+    public static Run WithUnderline(this Run run)
     {
-        run.Underline = UnderlinePatterns.Single;
+        var rPr = run.RunProperties ?? new RunProperties();
+        rPr.Underline = new Underline { Val = UnderlineValues.Single };
+        if (run.RunProperties == null)
+        {
+            run.PrependChild(rPr);
+        }
         return run;
     }
 
-    public static XWPFRun WithBreak(this XWPFRun run, BreakType type = BreakType.TEXTWRAPPING)
+    public static Run WithBreak(this Run run, BreakType type = BreakType.TextWrapping)
     {
-        run.AddBreak(type);
+        var br = new Break();
+        if (type == BreakType.PageBreak)
+        {
+            br.Type = BreakValues.Page;
+        }
+        run.Append(br);
         return run;
     }
 
-    public static XWPFRun WithAppendedText(this XWPFRun run, string text)
+    public static Run WithAppendedText(this Run run, string text)
     {
-        run.AppendText(text);
+        run.Append(new Text { Text = text });
         return run;
     }
 
     public static TOut Pipe<T, TOut>(this T input, Func<T, TOut> func) => func(input);
 
     public static TOut Pipe<T, TA, TOut>(this T input, Func<T, TA, TOut> func, TA arg) => func(input, arg);
+}
+
+public enum BreakType
+{
+    TextWrapping,
+    PageBreak
 }

@@ -2,8 +2,10 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using HtmlAgilityPack;
-using NPOI.XWPF.UserModel;
 using Polly;
 using Polly.Retry;
 
@@ -369,14 +371,13 @@ public class WebScrapping
         return text;
     }
 
-    private static XWPFDocument InitializeDocument(Ss ss, int lessonNumber)
+    private static WordprocessingDocumentWrapper InitializeDocument(Ss ss, int lessonNumber, string fileName)
     {
-        // Load template to preserve all styles (Title, Subtitle, Heading2, Heading3, Normal, IntenseQuote)
-        using var templateFileStream = File.OpenRead("Template.docx");
-        var doc = new XWPFDocument(templateFileStream);
+        // Create document from template
+        var doc = WordprocessingDocumentWrapper.CreateFromTemplate(fileName);
 
         // Clear body while keeping all template styles
-        while (doc.RemoveBodyElement(0)) { }
+        doc.ClearBody();
 
         return doc
             .AddParagraph("Title", ss.LessonTitle)
@@ -385,56 +386,50 @@ public class WebScrapping
             .AddParagraph("Normal", "Привітання");
     }
 
-    private static void AddHyperlinkToRun(XWPFParagraph para, string text, string uri, string color)
+    private static void AddHyperlinkToRun(Paragraph para, WordprocessingDocument doc, string text, string uri, string color)
     {
-        // Add relationship directly and use its ID
-        // This creates direct-URL relationships instead of the double-layer that CreateHyperlinkRun produces
-        var rel = para.Document.GetPackagePart().AddExternalRelationship(
-            uri,
-            XWPFRelation.HYPERLINK.Relation
-        );
-        string rId = rel.Id;
+        // Add hyperlink relationship
+        var mainPart = doc.MainDocumentPart!;
+        var rId = mainPart.AddHyperlinkRelationship(new Uri(uri), true).Id;
 
-        // Manually create hyperlink element via XML to avoid double-wrapping
-        var paraCtp = para.GetCTP();
-        var hyperlink = paraCtp.AddNewHyperlink();
-        hyperlink.id = rId;
-        hyperlink.history = NPOI.OpenXmlFormats.Wordprocessing.ST_OnOff.on;  // Enable hyperlink history tracking
+        // Create hyperlink element
+        var hyperlink = new Hyperlink { Id = rId, History = true };
 
-        var run = hyperlink.AddNewR();
-        var rPr = run.AddNewRPr();
+        // Create run with text
+        var run = new Run();
+        var runProp = new RunProperties();
 
-        // Apply Hyperlink character style (CRITICAL for Word recognition)
-        var rStyle = rPr.AddNewRStyle();
-        rStyle.val = "Hyperlink";
+        // Apply Hyperlink character style
+        runProp.Append(new RunStyle { Val = "Hyperlink" });
 
         // Set color and underline
-        var colorElem = rPr.AddNewColor();
-        colorElem.val = color;
-        var underline = rPr.AddNewU();
-        underline.val = NPOI.OpenXmlFormats.Wordprocessing.ST_Underline.single;
+        runProp.Append(new Color { Val = color });
+        runProp.Append(new Underline { Val = UnderlineValues.Single });
 
-        // Set text
-        var t = run.AddNewT();
-        t.Value = text;
+        run.Append(runProp);
+        run.Append(new Text { Text = text });
+
+        hyperlink.Append(run);
+        para.Append(hyperlink);
     }
 
-    private static XWPFDocument AddMemoryVerseSection(XWPFDocument doc, (string, string) memoryVerse)
+    private static WordprocessingDocumentWrapper AddMemoryVerseSection(WordprocessingDocumentWrapper docWrapper, (string, string) memoryVerse)
     {
-        doc.AddParagraph("Heading3", "Пам'ятний вірш");
+        docWrapper.AddParagraph("Heading3", "Пам'ятний вірш");
 
-        var para = doc.CreateParagraph().WithStyle("IntenseQuote");
+        var para = docWrapper.CreateParagraph().WithStyle("IntenseQuote");
         var uri = GetBibleLink(memoryVerse);
-        AddHyperlinkToRun(para, memoryVerse.Item1, uri, "0563C1");
+        AddHyperlinkToRun(para, docWrapper.GetDocument(), memoryVerse.Item1, uri, "0563C1");
 
-        para.CreateRun()
-            .WithBreak()
-            .WithAppendedText(memoryVerse.Item2);
+        var run = new Run();
+        run.WithBreak();
+        run.WithAppendedText(memoryVerse.Item2);
+        para.Append(run);
 
-        return doc;
+        return docWrapper;
     }
 
-    private static XWPFDocument AddQuestionSection(XWPFDocument doc) =>
+    private static WordprocessingDocumentWrapper AddQuestionSection(WordprocessingDocumentWrapper doc) =>
         doc
             .AddParagraph("Heading3", "Питання уроку:")
             .AddParagraph("Normal", "Ділимося на 3 класи. До 11:10.")
@@ -443,7 +438,7 @@ public class WebScrapping
             .AddParagraph("Heading2", "Пам'ятний вірш")
             .AddParagraph("Normal", "→ ");
 
-    private static XWPFDocument AddDaysSection(XWPFDocument doc, IList<Day> days)
+    private static WordprocessingDocumentWrapper AddDaysSection(WordprocessingDocumentWrapper doc, IList<Day> days)
     {
         var dayCount = Math.Min(DaysOfWeek.Count, days.Count - 1);
         for (var j = 0; j < dayCount; j++)
@@ -456,7 +451,7 @@ public class WebScrapping
         return doc;
     }
 
-    private static void AddQuestionsForDay(XWPFDocument doc, IList<Question> questions)
+    private static void AddQuestionsForDay(WordprocessingDocumentWrapper doc, IList<Question> questions)
     {
         foreach (var question in questions)
         {
@@ -471,39 +466,57 @@ public class WebScrapping
         }
     }
 
-    private static void AddQuestionWithVerses(XWPFDocument doc, Question question)
+    private static void AddQuestionWithVerses(WordprocessingDocumentWrapper docWrapper, Question question)
     {
-        var para = doc.CreateParagraph().WithStyle("Normal");
-        var run = para.CreateRun();
+        var doc = docWrapper.GetDocument();
+        var para = docWrapper.CreateParagraph().WithStyle("Normal");
 
         var innerText = question.Text.Replace("–", "-");
 
-        foreach (var verse in question.Verses)
+        var firstRun = true;
+        for (var i = 0; i < question.Verses.Count; i++)
         {
-            run.SetText("→ ");
+            var verse = question.Verses[i];
+
+            if (firstRun)
+            {
+                var run = new Run();
+                var arrowText = new Text { Text = "→ " };
+                arrowText.Space = SpaceProcessingModeValues.Preserve;
+                run.Append(arrowText);
+                para.Append(run);
+                firstRun = false;
+            }
+
             var uri = GetBibleLink((verse, verse));
-            var verseText = question.Verses.Count > 1 ? verse + "; " : verse;
-            AddHyperlinkToRun(para, verseText, uri, "0563C1");
+            var isLastVerse = i == question.Verses.Count - 1;
+            var verseText = question.Verses.Count > 1 && !isLastVerse ? verse + "; " : verse;
+            AddHyperlinkToRun(para, doc, verseText, uri, "0563C1");
 
             innerText = innerText.Replace(verse, "");
             innerText = StripVerseRemnant(innerText);
         }
 
-        run = para.CreateRun();
-        run.SetText($" {innerText}");
+        // Add space and remaining text, trimming innerText and ensuring space separation
+        if (!string.IsNullOrWhiteSpace(innerText))
+        {
+            var textRun = new Run();
+            var text = new Text { Text = " " + innerText.TrimStart() };
+            text.Space = SpaceProcessingModeValues.Preserve;
+            textRun.Append(text);
+            para.Append(textRun);
+        }
     }
 
-    private static void AddPlainQuestion(XWPFDocument doc, Question question)
+    private static void AddPlainQuestion(WordprocessingDocumentWrapper docWrapper, Question question)
     {
-        var para = doc
-            .CreateParagraph()
-            .WithStyle("Normal");
-        para
-            .CreateRun()
-            .SetText($"→ {question.Text}");
+        var para = docWrapper.CreateParagraph().WithStyle("Normal");
+        var run = new Run();
+        run.Append(new Text { Text = $"→ {question.Text}" });
+        para.Append(run);
     }
 
-    private static XWPFDocument FinalizeDocument(XWPFDocument doc)
+    private static WordprocessingDocumentWrapper FinalizeDocument(WordprocessingDocumentWrapper doc)
     {
         return doc
             .AddParagraph("Heading2", "Закінчення")
@@ -532,17 +545,15 @@ public class WebScrapping
 
             logger.Debug("Creating document for week {WeekNumber}: {Title}", weekNumber, ss.Title);
 
-            var doc = InitializeDocument(ss, weekNumber)
+            var fileName = $"Суботня школа {ss.EndDate:yyyy}.{_quarter}." + (weekNumber < 10 ? "0" : string.Empty) + weekNumber + ".docx";
+
+            using var doc = InitializeDocument(ss, weekNumber, fileName)
                 .Pipe(AddMemoryVerseSection, ss.MemoryVerse)
                 .Pipe(AddQuestionSection)
                 .Pipe(AddDaysSection, ss.Days)
                 .Pipe(FinalizeDocument);
 
             logger.Debug("Saving document {Title}", ss.Title);
-
-            var fileName = $"Суботня школа {ss.EndDate:yyyy}.{_quarter}." + (weekNumber < 10 ? "0" : string.Empty) + weekNumber + ".docx";
-            await using var sw = File.Create(fileName);
-            doc.Write(sw);
             doc.Close();
         }
 

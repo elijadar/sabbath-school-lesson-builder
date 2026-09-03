@@ -33,8 +33,8 @@ dotnet run --project SabbathSchoolLessonBuilder.csproj [options]
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--year <YYYY>` | Year for the quarter to generate (e.g., 2026) | 2026 |
-| `--quarter <QQ>` | Quarter number to generate (01, 02, 03, or 04) | 02 |
+| `--year <YYYY>` | Year for the quarter to generate (e.g., 2026) | Current year |
+| `--quarter <QQ>` | Quarter number to generate (01, 02, 03, or 04) | Current quarter |
 
 ### Examples
 

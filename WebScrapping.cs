@@ -11,10 +11,16 @@ namespace SabbathSchoolLessonBuilder
 {
     public class WebScrapping
     {
-        private const string DefaultYear = "2026";
-        private const string DefaultQuarter = "02";
-        private static string Year = DefaultYear;
-        private static string Quarter = DefaultQuarter;
+        private static string GetDefaultYear() => DateTime.Now.Year.ToString();
+
+        private static string GetDefaultQuarter()
+        {
+            var month = DateTime.Now.Month;
+            return (((month - 1) / 3) + 1).ToString("D2");
+        }
+
+        private static string Year = GetDefaultYear();
+        private static string Quarter = GetDefaultQuarter();
         private static string BaseUrl => $"https://sabbath-school-stage.adventech.io/api/v2/uk/quarterlies/{Year}-{Quarter}";
         private const string BibleUrl = "https://www.bible.com/uk/bible/3786/";
 

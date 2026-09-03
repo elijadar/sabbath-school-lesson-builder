@@ -492,15 +492,13 @@ public class WebScrapping
             innerText = StripVerseRemnant(innerText);
         }
 
-        // Add space run between hyperlink and remaining text
+        // Add space and remaining text, trimming innerText and ensuring space separation
         if (!string.IsNullOrWhiteSpace(innerText))
         {
-            var spaceRun = new Run();
-            spaceRun.Append(new Text { Text = " " });
-            para.Append(spaceRun);
-
             var textRun = new Run();
-            textRun.Append(new Text { Text = innerText });
+            var text = new Text { Text = " " + innerText.TrimStart() };
+            text.Space = SpaceProcessingModeValues.Preserve;
+            textRun.Append(text);
             para.Append(textRun);
         }
     }

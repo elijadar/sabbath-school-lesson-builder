@@ -399,9 +399,14 @@ public class WebScrapping
         var paraCtp = para.GetCTP();
         var hyperlink = paraCtp.AddNewHyperlink();
         hyperlink.id = rId;
+        hyperlink.history = NPOI.OpenXmlFormats.Wordprocessing.ST_OnOff.on;  // Enable hyperlink history tracking
 
         var run = hyperlink.AddNewR();
         var rPr = run.AddNewRPr();
+
+        // Apply Hyperlink character style (CRITICAL for Word recognition)
+        var rStyle = rPr.AddNewRStyle();
+        rStyle.val = "Hyperlink";
 
         // Set color and underline
         var colorElem = rPr.AddNewColor();

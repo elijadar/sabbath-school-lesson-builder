@@ -175,11 +175,7 @@ namespace SabbathSchoolLessonBuilder
 
                 logger.Information("Getting lesson {LessonInd}", lessonInd);
 
-<<<<<<< HEAD
-                response = await GetWithRetryAsync(client, $"{BaseUrl}/lessons/{lessonInd}/index.json");
-=======
-                response = await Client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/index.json");
->>>>>>> origin/main
+                response = await GetWithRetryAsync($"{BaseUrl}/lessons/{lessonInd}/index.json");
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/index.json", response.StatusCode);
@@ -199,11 +195,7 @@ namespace SabbathSchoolLessonBuilder
 
                     logger.Debug("->Getting day {DayCounter}", dayCounter + 1);
 
-<<<<<<< HEAD
-                    response = await GetWithRetryAsync(client, $"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
-=======
-                    response = await Client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
->>>>>>> origin/main
+                    response = await GetWithRetryAsync($"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
                     if (!response.IsSuccessStatusCode)
                     {
                         logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/days/0{dayCounter}/read/index.json", response.StatusCode);

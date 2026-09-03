@@ -492,9 +492,17 @@ public class WebScrapping
             innerText = StripVerseRemnant(innerText);
         }
 
-        var textRun = new Run();
-        textRun.Append(new Text { Text = $" {innerText}" });
-        para.Append(textRun);
+        // Add space run between hyperlink and remaining text
+        if (!string.IsNullOrWhiteSpace(innerText))
+        {
+            var spaceRun = new Run();
+            spaceRun.Append(new Text { Text = " " });
+            para.Append(spaceRun);
+
+            var textRun = new Run();
+            textRun.Append(new Text { Text = innerText });
+            para.Append(textRun);
+        }
     }
 
     private static void AddPlainQuestion(WordprocessingDocumentWrapper docWrapper, Question question)

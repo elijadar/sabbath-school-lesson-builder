@@ -253,17 +253,10 @@ namespace SabbathSchoolLessonBuilder
                 res.Add(new Ss
                 {
                     LessonTitle = title,
-<<<<<<< HEAD
-                    Title = entry["title"],
-                    EndDate = DateTime.ParseExact(entry["end_date"].ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                    Url = entry["full_path"],
-                    MemoryVerse = TextCleanup.ParseMemoryVerse(verse),
-=======
                     Title = entry.Title,
                     EndDate = DateTime.ParseExact(entry.EndDate, "dd/MM/yyyy", CultureInfo.InvariantCulture),
                     Url = entry.FullPath,
-                    MemoryVerse = GetVerse(verse),
->>>>>>> origin/main
+                    MemoryVerse = TextCleanup.ParseMemoryVerse(verse),
                     Days = days
                 });
             }

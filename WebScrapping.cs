@@ -114,6 +114,19 @@ namespace SabbathSchoolLessonBuilder
             "П'ятниця. "
         };
 
+        // Abbreviated book names that don't line up with a substring match against
+        // BooksOfBible (e.g. Russian-spelled abbreviations vs. Ukrainian full names,
+        // or abbreviations that skip letters present in the full name) get corrected
+        // here before the lookup in GetBibleLink.
+        private static readonly IReadOnlyDictionary<string, string> BookNameCorrections =
+            new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
+        {
+            ["Филм"] = "Филимона",
+            ["Мих"] = "Міхея"
+        };
+
+        private static readonly HttpClient Client = new HttpClient();
+
         public static async Task Run(Serilog.ILogger logger)
         {
             logger.Information("Creation of Sabbath School lessons!");
@@ -126,11 +139,11 @@ namespace SabbathSchoolLessonBuilder
 
         // Fetches a URL with retry/backoff for transient failures, then throttles before
         // returning so the next sequential request doesn't immediately follow it.
-        private static async Task<HttpResponseMessage> GetWithRetryAsync(HttpClient client, string url)
+        private static async Task<HttpResponseMessage> GetWithRetryAsync(string url)
         {
             var response = await RetryPipeline.ExecuteAsync(
                 static async (state, ct) => await state.Client.GetAsync(state.Url, ct),
-                (Client: client, Url: url),
+                (Client: Client, Url: url),
                 CancellationToken.None);
 
             await Task.Delay(RequestThrottleDelay);
@@ -141,11 +154,10 @@ namespace SabbathSchoolLessonBuilder
         private static async Task<IList<Ss>> GetHeaders(Serilog.ILogger logger)
         {
             var res = new List<Ss>();
-            var client = new HttpClient();
 
             logger.Information("Getting all lessons");
 
-            var response = await GetWithRetryAsync(client, $"{BaseUrl}/index.json");
+            var response = await GetWithRetryAsync($"{BaseUrl}/index.json");
             if (!response.IsSuccessStatusCode)
             {
                 logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/index.json", response.StatusCode);
@@ -163,7 +175,11 @@ namespace SabbathSchoolLessonBuilder
 
                 logger.Information("Getting lesson {LessonInd}", lessonInd);
 
+<<<<<<< HEAD
                 response = await GetWithRetryAsync(client, $"{BaseUrl}/lessons/{lessonInd}/index.json");
+=======
+                response = await Client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/index.json");
+>>>>>>> origin/main
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/index.json", response.StatusCode);
@@ -183,7 +199,11 @@ namespace SabbathSchoolLessonBuilder
 
                     logger.Debug("->Getting day {DayCounter}", dayCounter + 1);
 
+<<<<<<< HEAD
                     response = await GetWithRetryAsync(client, $"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
+=======
+                    response = await Client.GetAsync($"{BaseUrl}/lessons/{lessonInd}/days/0{++dayCounter}/read/index.json");
+>>>>>>> origin/main
                     if (!response.IsSuccessStatusCode)
                     {
                         logger.Warning("Failed to fetch {Url}: {StatusCode}", $"{BaseUrl}/lessons/{lessonInd}/days/0{dayCounter}/read/index.json", response.StatusCode);
@@ -230,13 +250,7 @@ namespace SabbathSchoolLessonBuilder
                             }
 
                             var question = questionNode.InnerText.Trim();
-                            question = Regex.Replace(question, @"^\d+\. ", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s+тексти\s*", "");
-                            question = Regex.Replace(question, @"^Перегляньте\s+уривок\s*", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s+уривок\s*", "");
-                            question = Regex.Replace(question, @"^Прочитайте\s*", "");
-                            question = Regex.Replace(question, @"^\s*див.\s*", "");
-                            question = Regex.Replace(question, @"^\s*текст\s*", "");
+                            question = StripQuestionLeadIn(question);
                             questions.Add(new Question(verses, question));
                         }
                     }
@@ -266,6 +280,42 @@ namespace SabbathSchoolLessonBuilder
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Strips numbering (e.g. "1. ") and known Ukrainian lead-in phrases
+        /// ("Прочитайте ...", "Перегляньте уривок", "див.", "текст") from the very
+        /// start of a question's raw text, right after it is scraped from the lesson
+        /// HTML in <see cref="GetHeaders"/> - before any verse reference has been
+        /// extracted/removed from it.
+        /// </summary>
+        private static string StripQuestionLeadIn(string text)
+        {
+            text = Regex.Replace(text, @"^\d+\. ", "");
+            text = Regex.Replace(text, @"^Прочитайте\s+тексти\s*", "");
+            text = Regex.Replace(text, @"^Перегляньте\s+уривок\s*", "");
+            text = Regex.Replace(text, @"^Прочитайте\s+уривок\s*", "");
+            text = Regex.Replace(text, @"^Прочитайте\s*", "");
+            text = Regex.Replace(text, @"^\s*див.\s*", "");
+            text = Regex.Replace(text, @"^\s*текст\s*", "");
+            return text;
+        }
+
+        /// <summary>
+        /// Cleans up what remains of a question's text in <see cref="CreateDocs"/>
+        /// after a single embedded verse reference has just been removed from it -
+        /// stray parenthetical fragments (e.g. "(Прочитайте )") and leading
+        /// punctuation/conjunctions ("."/":"/";", "та ", "і ") left behind by the
+        /// removal. Must only run on already lead-in-stripped, verse-stripped
+        /// remnant text, not on the raw question (see <see cref="StripQuestionLeadIn"/>).
+        /// </summary>
+        private static string StripVerseRemnant(string text)
+        {
+            text = Regex.Replace(text, @"\s*\((?:Прочитайте|див\.|Див\.\s+також)?\s*\)\.*", "");
+            text = Regex.Replace(text, @"^\s*[\.\:\;] ", "");
+            text = Regex.Replace(text, @"^\s*та ", "");
+            text = Regex.Replace(text, @"^\s*і ", "");
+            return text;
         }
 
         private static (string, string) GetVerse(string verse)
@@ -372,10 +422,7 @@ namespace SabbathSchoolLessonBuilder
                                 hyperlinkRun.SetColor("0563C1");
                                 hyperlinkRun.Underline = UnderlinePatterns.Single;
                                 innerText = innerText.Replace(verse, "");
-                                innerText = Regex.Replace(innerText, @"\s*\((?:Прочитайте|див\.|Див\.\s+також)?\s*\)\.*", "");
-                                innerText = Regex.Replace(innerText, @"^\s*[\.\:\;] ", "");
-                                innerText = Regex.Replace(innerText, @"^\s*та ", "");
-                                innerText = Regex.Replace(innerText, @"^\s*і ", "");
+                                innerText = StripVerseRemnant(innerText);
                             }
                             run1 = para1.CreateRun();
                             run1.SetText($" {innerText}");
@@ -424,14 +471,7 @@ namespace SabbathSchoolLessonBuilder
             var refer = string.Empty;
             var verse = where.Item1.Split(' ');
             var bookName = verse[0].Trim('.').Length == 1 ? verse[1].Trim('.') : verse[0].Trim('.');
-            if (bookName.StartsWith("Филм", StringComparison.InvariantCultureIgnoreCase))
-            {
-                bookName = "Филимона";
-            }
-            if (bookName.StartsWith("Мих", StringComparison.InvariantCultureIgnoreCase))
-            {
-                bookName = "Міхея";
-            }
+            bookName = NormalizeBookName(bookName);
             foreach (var book in BooksOfBible)
             {
                 if (book.Key.Contains(bookName, StringComparison.InvariantCultureIgnoreCase))
@@ -459,6 +499,27 @@ namespace SabbathSchoolLessonBuilder
             }
 
             return url;
+        }
+
+        /// <summary>
+        /// Corrects abbreviated Bible book names that don't substring-match their
+        /// full name in <see cref="BooksOfBible"/> (e.g. abbreviations spelled with
+        /// Russian letters instead of Ukrainian ones). Pure lookup, no side effects,
+        /// so it can be tested independently of <see cref="GetBibleLink"/>.
+        /// Matches are checked longest-key-first so results stay deterministic even
+        /// if a future correction's key happens to be a prefix of another one's.
+        /// </summary>
+        private static string NormalizeBookName(string bookName)
+        {
+            foreach (var correction in BookNameCorrections.OrderByDescending(c => c.Key.Length))
+            {
+                if (bookName.StartsWith(correction.Key, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return correction.Value;
+                }
+            }
+
+            return bookName;
         }
 
         private static XWPFHyperlinkRun CreateHyperlinkRun(XWPFParagraph paragraph, string uri)

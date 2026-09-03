@@ -115,16 +115,21 @@ WebScrapping.cs:391-398).
    the upstream API fails at runtime (`RuntimeBinderException`) instead of at
    compile time. Defining real response types and switching to
    `System.Text.Json` would remove this risk and the Newtonsoft dependency.
-2. ⏳ **A new `HttpClient` is created per call** (`GetHeaders`) instead of one
+2. ✅ **A new `HttpClient` is created per call** (`GetHeaders`) instead of one
    shared/injected instance — the classic socket-exhaustion anti-pattern.
-   Low risk at current request volume, but easy to fix.
+   Fixed: `GetHeaders` now reuses a single `static readonly HttpClient` field
+   across all requests. See
+   [issue #13](https://github.com/elijadar/sabbath-school-lesson-builder/issues/13).
 3. ⏳ **`Year`/`Quarter` are hardcoded consts** at the top of `WebScrapping.cs`
    — the only way to scrape a different quarter is to edit source and
    rebuild. Could be read from `args`/config instead.
-4. ⏳ **`GetBibleLink` hand-parses Bible references** via string splitting,
+4. ✅ **`GetBibleLink` hand-parses Bible references** via string splitting,
    with two hardcoded book-name corrections (`"Филм"` → `"Филимона"`,
-   `"Мих"` → `"Міхея"`). Fragile if more books need similar special-casing;
-   a lookup table would scale better and be independently testable.
+   `"Мих"` → `"Міхея"`). Fixed: the corrections now live in a
+   `BookNameCorrections` lookup table, applied via a small pure
+   `NormalizeBookName` helper (longest-key-first, so future entries can't
+   collide with existing ones) instead of two inline `if` statements. See
+   [issue #15](https://github.com/elijadar/sabbath-school-lesson-builder/issues/15).
 5. ✅ **Blocking `.Wait()`/`.Result` in `Run()`** instead of an async `Main`.
    Fixed: `Main` is now `static async Task Main`, `WebScrapping.Run` returns
    `Task`, and both calls use `await`. See
@@ -139,15 +144,20 @@ WebScrapping.cs:391-398).
    trimming) is exactly the kind of fiddly logic that would benefit most from
    unit tests, ideally after extracting it into its own testable
    class/method.
-8. ⏳ **Duplicate text-cleanup regex logic in two places.** The pattern of
-   stripping prefixes/punctuation from question text appears both in
+8. ✅ **Duplicate text-cleanup regex logic in two places.** The pattern of
+   stripping prefixes/punctuation from question text appeared both in
    `GetHeaders` (WebScrapping.cs:196-204) and again, differently, in
-   `CreateDocs` (WebScrapping.cs:338-343). When the Ukrainian text-formatting
-   rules need a tweak (and given how many special cases already exist — e.g.
-   WebScrapping.cs:391-398 — they will), there are two places to remember to
-   change, and they already diverge. Worth consolidating into one
-   `CleanQuestionText(string)` helper used by both, next time this code is
-   touched.
+   `CreateDocs` (WebScrapping.cs:338-343), and had already diverged. Fixed:
+   extracted `StripQuestionLeadIn` (used by `GetHeaders`) and
+   `StripVerseRemnant` (used by `CreateDocs`) as named helpers. A single fully
+   merged `CleanQuestionText` helper was tried first, but caused text-
+   corruption regressions since the two original call sites clean text at
+   different pipeline stages — kept as two behavior-preserving helpers
+   instead. A handful of pre-existing text-cleanup artifacts (stray
+   punctuation remnants like `? ?`/`; ; .`) were found during verification and
+   confirmed present on `main` before this change too — out of scope here,
+   left for a follow-up. See
+   [issue #18](https://github.com/elijadar/sabbath-school-lesson-builder/issues/18).
 
 ## Process notes
 

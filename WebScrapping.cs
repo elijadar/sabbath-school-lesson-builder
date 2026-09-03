@@ -481,7 +481,9 @@ public class WebScrapping
             if (firstRun)
             {
                 var run = new Run();
-                run.Append(new Text { Text = "→ " });
+                var arrowText = new Text { Text = "→ " };
+                arrowText.Space = SpaceProcessingModeValues.Preserve;
+                run.Append(arrowText);
                 para.Append(run);
                 firstRun = false;
             }
